@@ -1,13 +1,12 @@
-.. _install:
+.. _setup:
 
 ============
 Installation
 ============
 
 This guide explains how to install the required components to run the Makefile and
-draw the GWTC-4 distribution.
-It is recommended to use :uvdoc:`index` `<uv https://docs.astral.sh/uv/>`_ to create and manage the virtual environment,
-which avoids dependency conflicts.
+draw the GWTC-4 distribution. It is recommended to use `uv <https://docs.astral.sh/uv/>`_
+to create and manage the virtual environment, which avoids dependency conflicts.
 
 .. note::
 
@@ -17,10 +16,8 @@ which avoids dependency conflicts.
    The file includes the posterior values for mass, spin, and merger-rate hyperparameters.
 
    Using these hyperparameters, the model can be used to generate synthetic :term:`CBC` distributions
-   under the GWTC-4 Broken Power Law + Two Peaks population model.
-
-   Here, we draw a distribution of one million samples to be used with the
-   `observing-scenarios pipeline <https://github.com/lpsinger/observing-scenarios-simulations/>`_
+   under the GWTC-4 Broken Power Law + Two Peaks population model. Here, we draw a distribution of one million
+   samples to be used with the `observing-scenarios pipeline <https://github.com/lpsinger/observing-scenarios-simulations/>`_
    together with ``ligo.skymap`` to simulate observing campaigns for upcoming runs.
 
 
@@ -31,6 +28,8 @@ which avoids dependency conflicts.
    .. button-link:: https://colmtalbot.github.io/gwpopulation/
       :color: info
       :shadow:
+
+      gwpopulation
 
    :bdg-warning:`Python >= 3.11`
 
@@ -43,15 +42,19 @@ which avoids dependency conflicts.
       uv sync
 
 
+================
+Run the Pipeline
+================
+
 .. dropdown:: Running the pipeline
 
    Two equivalent options are available - choose one:
 
    .. tab-set::
 
-      Run commands without activating the environment explicitly:
-
       .. tab-item:: Using uv directly
+
+         Run commands without activating the environment explicitly:
 
          .. code-block:: bash
 
