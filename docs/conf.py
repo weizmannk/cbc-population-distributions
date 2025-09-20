@@ -195,7 +195,7 @@ html_theme_options.update(  # noqa: F405
 )
 
 html_context = {
-    "default_mode": "light",
+    "default_mode": "dark",  # "light",
     "to_be_indexed": ["stable", "latest"],
     "github_user": "weizmannk",
     "github_repo": "cbc-population-distributions",
