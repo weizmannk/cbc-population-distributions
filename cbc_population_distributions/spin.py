@@ -5,6 +5,7 @@ Provides functions for evaluating spin orientation and spin magnitude distributi
 
 from gwpopulation.utils import beta_dist, truncnorm, xp
 
+
 def iid_spin_orientation_gaussian_isotropic(dataset, xi_spin, sigma_spin):
     r"""A mixture model of spin orientations with isotropic and normally
     distributed components. The distribution of primary and secondary spin
