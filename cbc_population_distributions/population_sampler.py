@@ -1,7 +1,7 @@
 """
-This module extends the original ``gwpopulation_pipe`` by adding support for the Pairing model. 
-It provides tools to generate synthetic gravitational-wave (GW) event samples from population inference, 
-using rejection sampling with explicit parameter bounds and optional selection functions, making it suitable 
+This module extends the original ``gwpopulation_pipe`` by adding support for the Pairing model.
+It provides tools to generate synthetic gravitational-wave (GW) event samples from population inference,
+using rejection sampling with explicit parameter bounds and optional selection functions, making it suitable
 for population-level GW studies.
 
 - draw_true_values: Draws synthetic GW event parameters from a specified population model.
@@ -9,12 +9,10 @@ for population-level GW studies.
 
 """
 
-
 import numpy as np
 import pandas as pd
 from bilby.core.prior import Uniform
 from bilby.core.utils import logger
-
 from gwpopulation.utils import to_numpy, xp
 
 # -------------------------------

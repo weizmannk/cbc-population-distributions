@@ -4,6 +4,7 @@ Implements both independent and mass-ratio paired versions of the 2D mass model,
 
 from gwpopulation.utils import truncnorm, xp
 
+
 def power_law_dip_break_1d(
     mass,
     A,

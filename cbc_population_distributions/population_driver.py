@@ -4,7 +4,7 @@ CBC Population Driver
 
 This script provides an interface to generate gravitational-wave (GW) event samples
 using max a posteriori (MAP) parameters from population inference. It implements the
-Broken Power Law + Two Peaks (Gaussian peaks) mass distribution with a power-law 
+Broken Power Law + Two Peaks (Gaussian peaks) mass distribution with a power-law
 redshift evolution, the default population model of GWTC-4.
 
 The script extracts MAP hyperparameters from ``gwpopulation``-style result files and draws
@@ -12,28 +12,27 @@ simulated CBC events under the GWTC-4 population model. Samples are generated in
 memory safety and saved in JSON and HDF5 formats.
 """
 
-import logging
-import os
-from pathlib import Path
 import argparse
+import logging
+from pathlib import Path
 
-from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from astropy.table import Table
 from bilby.core.result import read_in_result
 from bilby.hyper.model import Model
 from gwpopulation.models.redshift import PowerLawRedshift
+from tqdm import tqdm
 
 from .mass import (
     matter_matters_pairing,
     matter_matters_primary_secondary_independent,
 )
+from .population_sampler import draw_true_values
 from .spin import (
     iid_spin_magnitude_gaussian,
     iid_spin_orientation_gaussian_isotropic,
 )
-from .population_sampler import draw_true_values
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -50,6 +49,7 @@ def _get_map_sample(hyperparams) -> pd.Series:
     else:
         return post.iloc[np.argmax(post.log_likelihood)]
 
+
 # ---------------- Drawing ----------------
 def sample_max_post(
     hyperparams_file: str,
@@ -62,7 +62,7 @@ def sample_max_post(
     pairing: bool = True,
 ) -> dict[str, str]:
     """
-    Draw samples from MAP hyperparameters of the Broken 
+    Draw samples from MAP hyperparameters of the Broken
     Power Law + Two Peaks population model from GWTC-4.
 
     Parameters
@@ -127,15 +127,15 @@ def sample_max_post(
 
     else:
         components = [
-                matter_matters_primary_secondary_independent,
-                iid_spin_orientation_gaussian_isotropic,
-                iid_spin_magnitude_gaussian,
-                PowerLawRedshift(z_max=z_max),
-            ]
+            matter_matters_primary_secondary_independent,
+            iid_spin_orientation_gaussian_isotropic,
+            iid_spin_magnitude_gaussian,
+            PowerLawRedshift(z_max=z_max),
+        ]
 
     model = Model(components, cache=False)
     model.parameters.update(maxp_samp)
-    
+
     # rng = np.random.default_rng(seed) if seed is not None else None
 
     # --- chunked sampling ---
@@ -152,7 +152,9 @@ def sample_max_post(
             break
 
         # Generate events from the population model
-        events_chunk = draw_true_values(model=model, vt_model=None, n_samples=current_chunk)
+        events_chunk = draw_true_values(
+            model=model, vt_model=None, n_samples=current_chunk
+        )
 
         # Save the current chunk immediately as JSON
         # (this prevents memory issues and keeps partial results safe)
@@ -166,12 +168,12 @@ def sample_max_post(
     # --- concatenate all chunks + save global outputs ---
     # Save final outputs
     json_file = f"{events_prefix}_all.json"
-    h5_file   = f"{events_prefix}_all.h5"
+    h5_file = f"{events_prefix}_all.h5"
 
     events = pd.concat(dfs).reset_index(drop=True)
     events.to_json(json_file, indent=4)
     Table.from_pandas(events).write(
-        h5_file , path="events", overwrite=True, format="hdf5"
+        h5_file, path="events", overwrite=True, format="hdf5"
     )
 
     # quick counts
@@ -180,7 +182,7 @@ def sample_max_post(
     bbh_count = (events["mass_2"] >= 3).sum()
     logger.info(f"BNS={bns_count}  NSBH={nsbh_count}  BBH={bbh_count}")
 
-    logger.info(f"Saved outputs: { json_file}, {h5_file}")
+    logger.info(f"Saved outputs: {json_file}, {h5_file}")
     return {"json": str(json_file), "h5": str(h5_file)}
 
 
@@ -190,22 +192,44 @@ def _parse_args(argv=None):
         prog="cbc-sample",
         description="Draw CBC population samples from MAP hyperparameters (GWTC-4 distribution).",
     )
-    parser.add_argument("--hyperparams-file", required=True, help="Bilby result .hdf5 (MAP source).")
+    parser.add_argument(
+        "--hyperparams-file", required=True, help="Bilby result .hdf5 (MAP source)."
+    )
     parser.add_argument("--outdir", default="outdir", help="Output directory.")
-    parser.add_argument("--n-samples", type=int, default=1_000_000, help="Number of samples to draw.")
+    parser.add_argument(
+        "--n-samples", type=int, default=1_000_000, help="Number of samples to draw."
+    )
     # pairing toggle
-    parser.add_argument("--pairing", dest="pairing", action="store_true",
-                   help="Use pairing model (default).")
-    parser.add_argument("--no-pairing", dest="pairing", action="store_false",
-                   help="Use independent mass model.")
+    parser.add_argument(
+        "--pairing",
+        dest="pairing",
+        action="store_true",
+        help="Use pairing model (default).",
+    )
+    parser.add_argument(
+        "--no-pairing",
+        dest="pairing",
+        action="store_false",
+        help="Use independent mass model.",
+    )
     parser.set_defaults(pairing=True)
 
-    parser.add_argument("--chunk-size", type=int, default=1_000, help="Chunk size for incremental writes.")
-    parser.add_argument("--absolute-mmin", type=float, default=0.5, help="Absolute min mass.")
-    parser.add_argument("--absolute-mmax", type=float, default=350.0, help="Absolute max mass.")
-    parser.add_argument("--z-max", type=float, default=2.3, help="Max redshift for PowerLawRedshift.")
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=1_000,
+        help="Chunk size for incremental writes.",
+    )
+    parser.add_argument(
+        "--absolute-mmin", type=float, default=0.5, help="Absolute min mass."
+    )
+    parser.add_argument(
+        "--absolute-mmax", type=float, default=350.0, help="Absolute max mass."
+    )
+    parser.add_argument(
+        "--z-max", type=float, default=2.3, help="Max redshift for PowerLawRedshift."
+    )
     return parser.parse_args(argv)
-
 
 
 def main(argv=None):
@@ -230,8 +254,9 @@ def main(argv=None):
         absolute_mmin=args.absolute_mmin,
         absolute_mmax=args.absolute_mmax,
         z_max=args.z_max,
-        pairing=args.pairing
+        pairing=args.pairing,
     )
+
 
 if __name__ == "__main__":
     main()
