@@ -11,7 +11,7 @@ and a Power Law for the redshift distribution. Includes large-scale sampling (up
    .. toctree::
       :maxdepth: 2
 
-      install/index
+      guide/index
 
 .. admonition:: Indices and Search
 

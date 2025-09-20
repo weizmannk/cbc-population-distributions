@@ -257,10 +257,6 @@ intersphinx_mapping.update(  # noqa: F405
     }
 )
 
-extlinks = {
-    "uvdoc": ("https://docs.astral.sh/uv/%s", "uv %s"),
-}
-
 # -- Options for plot_directive -----------------------------------------------
 plot_include_source = True
 plot_formats = [("svg", 300), ("pdf", 300)]
