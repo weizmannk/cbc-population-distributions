@@ -19,9 +19,6 @@ and International Gravitational-Wave Network (IGWN).
 Getting Started
 ---------------
 
-Nous avons construit une architecture avec UV facilement excecutable et le make file execute tout le processus and une seule exécution
-See the `documentation <https://EarthOrbitPlan.readthedocs.io/en/latest/>`_ for installation instructions, example scenarios, and guided exercises.
-
 To reproduce the distribution, we provide a lightweight architecture based on
 ``uv``, where a single ``Makefile`` command executes the entire process.
 See the `documentation <https://cbc-population-distributions.readthedocs.io/en/latest/>`_
