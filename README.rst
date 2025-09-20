@@ -1,0 +1,16 @@
+cbc-population-distributions: CBC Population Distributions from GWTC-4
+======================================================================
+
+.. image:: https://readthedocs.org/projects/cbc-population-distributions/badge/?version=latest
+   :target: https://cbc-population-distributions.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+A pipeline to sample compact binary coalescence (CBC) populations based on the
+Gravitational-Wave Transient Catalog 4 (GWTC-4) models: a Broken Power Law with
+two Gaussian peaks for the component mass distribution, and a Power Law for the
+redshift distribution.
+
+We provide large-scale sampling (up to one million binaries), which can be used
+with the `observing-scenarios-simulations <https://github.com/lpsinger/observing-scenarios-simulations>`_
+pipeline to predict upcoming observing campaigns of the LIGO–Virgo–KAGRA (LVK) collaboration
+and International Gravitational-Wave Network (IGWN).
