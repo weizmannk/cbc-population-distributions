@@ -1,0 +1,35 @@
+# pyproject.toml
+# ================================
+# Python project configuration for uv + setuptools
+# Works as the "global docstring" of the project
+# ================================
+
+[project]
+name = "cbc-population-distributions"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+# Main dependencies
+dependencies = [
+    "gwpopulation[jax]>=1.2.1",
+    "ipython>=9.5.0",
+    "pre-commit>=4.3.0",
+]
+
+# CLI entry point
+[project.scripts]
+cbc-sample = "cbc_population_distributions.population_driver:main"
+
+# Tell uv this is a package
+[tool.uv]
+package = true
+
+# Build system (setuptools)
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Package discovery: include only the main code, exclude extras
+[tool.setuptools.packages.find]
+include = ["cbc_population_distributions*"]
+exclude = ["tests*", "scripts*", "data*"]
