@@ -6,15 +6,20 @@
 
 [project]
 name = "cbc-population-distributions"
+authors = [{name = "R. Weizmann Kiendrebeogo", email = "kiend.weizman7@gmail.com"}]
 version = "0.1.0"
 requires-python = ">=3.11"
+
 
 # Main dependencies
 dependencies = [
     "gwpopulation[jax]>=1.2.1",
     "ipython>=9.5.0",
     "pre-commit>=4.3.0",
+    "pybtex>=0.25.1",
+    "pytest-astropy[test]>=0.11.0",
     "ruff>=0.13.1",
+    "sphinx[docs]>=8.2.3",
 ]
 
 # CLI entry point
@@ -24,6 +29,82 @@ cbc-sample = "cbc_population_distributions.population_driver:main"
 # Tell uv this is a package
 [tool.uv]
 package = true
+
+
+[project.optional-dependencies]
+test = [
+    "astroplan",
+    "networkx",
+    "pytest-astropy",
+]
+docs = [
+    "pysiaf",
+    "sphinx-astropy[confv2]",
+    "sphinxcontrib-bibtex",
+    "sphinxcontrib-typer",
+    "sphinx-automodapi",
+    "sphinx-thebe",
+    "sphinx-design",
+    "jupyter-sphinx",
+    "ipykernel",
+    "nbsphinx",
+    "sphinx-gallery",
+    "ipython",
+    "ipykernel",
+    "jupyter_client",
+    "nbconvert",
+    "sphinx",
+    "numpydoc",
+    "graphviz",
+    "joblib",
+    "dask",
+    "ligo.skymap >= 2.4.0",
+    "python-ligo-lw",
+    "igwn-ligolw",
+    "memory-profiler"
+]
+
+
+[tool.pytest.ini_options]
+testpaths = [
+    "cbc-population-distributions",
+    "docs",
+]
+norecursedirs = [
+    "_build",
+]
+astropy_header = true
+doctest_plus = "enabled"
+text_file_format = "rst"
+addopts = [
+    "--doctest-rst",
+    "--ignore=docs/_build",
+]
+doctest_optionflags = [
+    "FLOAT_CMP",
+    "IGNORE_EXCEPTION_DETAIL",
+]
+
+[tool.coverage.run]
+omit = [
+    "cbc-population-distributions/*setup_package*",
+    "*/cbc-population-distributions/*setup_package*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # Don't complain about packages we have installed
+    "except ImportError",
+    # Don't complain if tests don't hit assertions
+    "raise AssertionError",
+    "raise NotImplementedError",
+    # Don't complain about script hooks
+    "def main\\(.*\\):",
+    # Ignore branches that don't pertain to this version of Python
+    "pragma: py{ignore_python_version}",
+    # Don't complain about IPython completion helper
+    "def _ipython_key_completions_",
+]
 
 # Build system (setuptools)
 [build-system]
