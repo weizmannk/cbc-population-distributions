@@ -42,6 +42,21 @@ to create and manage the virtual environment, which avoids dependency conflicts.
       uv sync
 
 
+
+=========================
+Read the hyperparams file
+=========================
+
+Below we provide a small script to read the BP2 result file with **bilby**
+and extract the MAP (or ML) sample.
+
+:download:`bp2p_hyperparams <../../scripts/bp2p_hyperparams.py>`
+
+.. literalinclude:: ../../scripts/bp2p_hyperparams.py
+   :language: python
+   :linenos:
+
+
 ================
 Run the Pipeline
 ================

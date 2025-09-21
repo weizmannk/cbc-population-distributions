@@ -1,8 +1,8 @@
 .. _hyperparams:
 
-==============================
-Population Model (GWTC-4 BP2P)
-==============================
+=========================
+Population Model (GWTC-4)
+=========================
 
 
 .. dropdown:: Primary Mass Distribution
