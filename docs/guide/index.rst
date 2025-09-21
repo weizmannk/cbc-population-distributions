@@ -8,3 +8,4 @@ Setup Guide
    :maxdepth: 2
 
    setup
+   hyperparameters
