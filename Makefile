@@ -4,9 +4,9 @@
 #   make run        # download input (if needed) + run sampler
 #   make clean      # delete chunked JSONs, keep *_all.json / *_all.h5
 
-# ---- Config (override with: make run NSAMPLES=10000 OUTDIR=out ect.) ----
+# ---- Config (override with: make run NSAMPLES=10000 OUTDIR=out etc...) ----
 
-# FIXME: Repace by and public link
+# FIXME: Replace by and public link
 # GWTC-4 hyperparameters file (Broken Power Law + Two Peaks model).
 HYP_FILE ?= baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5
 HYP_URL  ?= https://dcc.ligo.org//LIGO-T2500311/$(HYP_FILE)
