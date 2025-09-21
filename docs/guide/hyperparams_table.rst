@@ -9,41 +9,41 @@
    +-------------------+---------------------------------------------------------------------------------------------+--------+
    | $\alpha_d$        | Power-law exponent inside the NS–BH mass gap                                                | -1.68  |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $m_{\\min}$       | Minimum compact object mass                                                                 | 1.18   |
+   | $m_{\min}$       | Minimum compact object mass                                                                 | 1.18   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\gamma_{low1}$  | Start of the lower mass gap                                                                 | 4.09   |
+   | $\gamma_{low1}$  | Start of the lower mass gap                                                                 | 4.09   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\gamma_{high1}$ | End of the lower mass gap                                                                   | 7.76   |
+   | $\gamma_{high1}$ | End of the lower mass gap                                                                   | 7.76   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $m_{\\max}$       | Maximum BH mass in the power-law component                                                  | 152    |
+   | $m_{\max}$       | Maximum BH mass in the power-law component                                                  | 152    |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
    | $A$               | Depth of the dip between $\gamma_{low1}$ and $\gamma_{high1}$                               | 0.0915 |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\gamma_{low2}$  | Start of the upper (PI) mass gap                                                            | 38.3   |
+   | $\gamma_{low2}$  | Start of the upper (PI) mass gap                                                            | 38.3   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\gamma_{high2}$ | End of the upper (PI) mass gap                                                              | 66.6   |
+   | $\gamma_{high2}$ | End of the upper (PI) mass gap                                                              | 66.6   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\mu_{peak1}$    | Mean of the upper Gaussian peak                                                             | 37.8   |
+   | $\mu_{peak1}$    | Mean of the upper Gaussian peak                                                             | 37.8   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\sigma_{peak1}$ | Width of the upper Gaussian peak                                                            | 17.1   |
+   | $\sigma_{peak1}$ | Width of the upper Gaussian peak                                                            | 17.1   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
    | $c_1$             | Mixing fraction of the upper Gaussian peak                                                  | 735    |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\mu_{peak2}$    | Mean of the lower Gaussian peak where an overdensity of merging compact objects is observed | 8.9    |
+   | $\mu_{peak2}$    | Mean of the lower Gaussian peak where an overdensity of merging compact objects is observed | 8.9    |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\sigma_{peak2}$ | Width of the lower Gaussian peak where an overdensity of merging compact objects is observe | 1.04   |
+   | $\sigma_{peak2}$ | Width of the lower Gaussian peak where an overdensity of merging compact objects is observe | 1.04   |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
    | $c_2$             | Mixing fraction of the lower Gaussian peak with the powerlaw + notches                      | 212    |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_0$         | Exponents to set the sharpness of the low mass cutoff                                       | 50     |
+   | $\eta_0$         | Exponents to set the sharpness of the low mass cutoff                                       | 50     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_5$         | Exponents to set the sharpness of the high mass cutoff                                      | 10     |
+   | $\eta_5$         | Exponents to set the sharpness of the high mass cutoff                                      | 10     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_1$         | Exponents to set the sharpness of the lower edge of the lower mass gap( $\gamma_{low1})$    | 50     |
+   | $\eta_1$         | Exponents to set the sharpness of the lower edge of the lower mass gap( $\gamma_{low1})$    | 50     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_2$         | Exponents to set the sharpness of upper edge of the lower mass gap ($\gamma_{high1}$)       | 50     |
+   | $\eta_2$         | Exponents to set the sharpness of upper edge of the lower mass gap ($\gamma_{high1}$)       | 50     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_3$         | Exponents to set the sharpness of the lower edge of the upper mass gap ($\gamma_{low2}$)    | 30     |
+   | $\eta_3$         | Exponents to set the sharpness of the lower edge of the upper mass gap ($\gamma_{low2}$)    | 30     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
-   | $\\eta_4$         |  Exponents to set the sharpness of the upper edge of the upper mass gap, $\gamma_{high2}$   | 30     |
+   | $\eta_4$         |  Exponents to set the sharpness of the upper edge of the upper mass gap, $\gamma_{high2}$   | 30     |
    +-------------------+---------------------------------------------------------------------------------------------+--------+
