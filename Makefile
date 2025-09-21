@@ -22,14 +22,14 @@ PAIRING  ?= 1   # 1=pairing (default), 0=independent
 
 all: run
 
-# Download the hyperparameters file if missing
-download: $(HYP_FILE)
-$(HYP_FILE):
-	curl -fL -o "$@" "$(HYP_URL)"
+# # Download the hyperparameters file if missing
+# download: $(HYP_FILE)
+# $(HYP_FILE):
+# 	curl -fL -o "$@" "$(HYP_URL)"
 
-# Force re-download of the hyperparameters file, if needed
-update:
-	curl -fL -o "$(HYP_FILE)" "$(HYP_URL)"
+# # Force re-download of the hyperparameters file, if needed
+# update:
+# 	curl -fL -o "$(HYP_FILE)" "$(HYP_URL)"
 
 # Run CBC sampler (calls cbc_population_distributions/population_driver.py via CLI)
 run: download
