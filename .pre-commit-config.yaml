@@ -57,8 +57,6 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        args: ["--write-changes"]
-        #args: [-L, "nd,hist", "--skip", "*.ipynb"]
+        args: [-L, "nd,hist", "--skip", "*.ipynb"]
         additional_dependencies:
           - tomli
-        exclude: ^|.*\.ipynb
