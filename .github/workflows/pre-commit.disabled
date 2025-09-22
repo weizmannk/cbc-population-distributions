@@ -1,0 +1,48 @@
+name: pre-commit
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  precommit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run all pre-commit hooks
+        run: pre-commit run --all-files
+
+
+# name: pre-commit
+
+# on:
+#   pull_request:
+#   push:
+#     branches: [ main ]
+
+# jobs:
+#   precommit:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v5
+
+#       - name: Install uv
+#         uses: astral-sh/setup-uv@v6
+#         with:
+#           version: "0.7.x"
+#           enable-cache: true
+
+#       - name: Install dev dependencies
+#         run: uv sync --all-extras
+
+#       - name: Run all pre-commit hooks
+#         run: uv run pre-commit run --all-files

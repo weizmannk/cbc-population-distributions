@@ -23,5 +23,5 @@ hyperparams_file = (
 )
 
 # Load "Broken Power Law + 2 Peaks" model and extract MAP sample
-hyperparams = read_in_result(hyperparams_file)
+hyperparams =              read_in_result(hyperparams_file)
 maxp_samp = _get_map_sample(hyperparams)
