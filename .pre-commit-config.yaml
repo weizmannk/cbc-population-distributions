@@ -5,7 +5,7 @@
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       # Detects files with names that may conflict on case-insensitive filesystems
       # (e.g., MacOS, Windows).
@@ -33,7 +33,7 @@ repos:
 
   # Ruff linter and formatter for Python.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.13.2
     hooks:
       # try to fix what is possible
       - id: ruff
