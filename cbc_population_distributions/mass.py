@@ -182,7 +182,6 @@ def matter_matters_primary_secondary_independent(
         Joint probability for each (mass_1, mass_2) pair.
 
     """
-    print("Colonnes dataset:", dataset.columns)
     p_m1 = power_law_dip_break_1d(
         dataset["mass_1"],
         A,
