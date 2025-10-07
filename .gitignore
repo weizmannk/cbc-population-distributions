@@ -193,6 +193,7 @@ cython_debug/
 #  you could uncomment the following to ignore the entire vscode folder
 
 .vscode/
+.DS_Store
 
 # Ruff stuff:
 .ruff_cache/
@@ -215,3 +216,6 @@ __marimo__/
 
 # folders
 output/
+
+# file
+.baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5
