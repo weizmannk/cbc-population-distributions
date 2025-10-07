@@ -9,3 +9,4 @@ Setup Guide
 
    setup
    hyperparameters
+   quick_analysis
