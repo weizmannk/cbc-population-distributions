@@ -177,6 +177,4 @@ Population Model (GWTC-4)
 
         .. tab-item:: Hyperparameters
 
-            .. table:: Hyperparameters of the BP2P model
-
-                .. include:: ./hyperparams_table.rst
+            .. include:: ./hyperparams_table.rst
