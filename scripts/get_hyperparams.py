@@ -97,50 +97,68 @@ def _get_map_sample(hyperparams) -> pd.Series:
 
 
 PARAMS_INFO = {
-    "alpha_1": (r"\alpha_1", "Power-law exponent below $\\gamma_{low1}$"),
-    "alpha_2": (r"\alpha_2", "Power-law exponent above $\\gamma_{high1}$"),
-    "alpha_dip": (r"\alpha_d", "Power-law exponent inside the NS–BH mass gap"),
-    "NSmin": (r"m_{\\min}", "Minimum compact object mass"),
-    "NSmax": (r"\\gamma_{low1}", "Start of the lower mass gap"),
-    "BHmin": (r"\\gamma_{high1}", "End of the lower mass gap"),
-    "BHmax": (r"m_{\\max}", "Maximum BH mass in the power-law component"),
-    "A": (r"A", "Depth of the dip between $\\gamma_{low1}$ and $\\gamma_{high1}$"),
-    "UPPERmin": (r"\\gamma_{low2}", "Start of the upper (PI) mass gap"),
-    "UPPERmax": (r"\\gamma_{high2}", "End of the upper (PI) mass gap"),
-    "mu1": (r"\\mu_{peak1}", "Mean of the upper Gaussian peak"),
-    "sig1": (r"\\sigma_{peak1}", "Width of the upper Gaussian peak"),
-    "mix1": (r"c_1", "Mixing fraction of the upper Gaussian peak"),
+    "alpha_1": (
+        r":math:`\alpha_1`",
+        r"Power-law exponent below :math:`\gamma_\mathrm{low1}`",
+    ),
+    "alpha_2": (
+        r":math:`\alpha_2`",
+        r"Power-law exponent above :math:`\gamma_\mathrm{high1}`",
+    ),
+    "alpha_dip": (r":math:`\alpha_d`", r"Power-law exponent inside the NS–BH mass gap"),
+    "NSmin": (r":math:`m_{\mathrm{min, NS}}`", "Minimum compact object mass"),
+    "NSmax": (r":math:`\gamma_\mathrm{low1}`", "Start of the lower mass gap"),
+    "BHmin": (r":math:`\gamma_\mathrm{high1}`", "End of the lower mass gap"),
+    "BHmax": (
+        r":math:`m_{\mathrm{max, BH}}`",
+        "Maximum BH mass in the power-law component",
+    ),
+    "A": (
+        r":math:`\mathrm{A}`",
+        r"Depth of the dip between :math:`\gamma_{\mathrm{low1}}` and :math:`\gamma_\mathrm{high1}`",
+    ),
+    "UPPERmin": (r":math:`\gamma_\mathrm{low2}`", "Start of the upper (PI) mass gap"),
+    "UPPERmax": (r":math:`\gamma_\mathrm{high2}`", "End of the upper (PI) mass gap"),
+    "mu1": (r":math:`\mu_\mathrm{peak1}`", "Mean of the upper Gaussian peak"),
+    "sig1": (r":math:`\sigma_\mathrm{peak1}`", "Width of the upper Gaussian peak"),
+    "mix1": (r":math:`\mathrm{c}_1`", "Mixing fraction of the upper Gaussian peak"),
     "mu2": (
-        r"\\mu_{peak2}",
+        r":math:`\mu_\mathrm{peak2}`",
         "Mean of the lower Gaussian peak where an overdensity of merging compact objects is observed",
     ),
     "sig2": (
-        r"\\sigma_{peak2}",
-        "Width of the lower Gaussian peak where an overdensity of merging compact objects is observe",
+        r":math:`\sigma_\mathrm{peak2}`",
+        "Width of the lower Gaussian peak where an overdensity of merging compact objects is observed",
     ),
     "mix2": (
-        r"c_2",
-        "Mixing fraction of the lower Gaussian peak with the powerlaw + notches",
+        r":math:`\mathrm{c}_2`",
+        "Mixing fraction of the lower Gaussian peak with the power-law + notches",
     ),
-    "absolute_mmin": (r"m_{abs,min}", "Absolute minimum truncation"),
-    "absolute_mmax": (r"m_{abs,max}", "Absolute maximum truncation"),
-    "n0": (r"\\eta_0", "Exponents to set the sharpness of the low mass cutoff"),
-    "n5": (r"\\eta_5", "Exponents to set the sharpness of the high mass cutoff"),
+    "absolute_mmin": (r":math:`m_\mathrm{abs,min}`", "Absolute minimum truncation"),
+    "absolute_mmax": (r":math:`m_\mathrm{abs,max}`", "Absolute maximum truncation"),
+    "n0": (
+        r":math:`\eta_0`",
+        "Exponent controlling the sharpness of the low-mass cutoff",
+    ),
+    "n5": (
+        r":math:`\eta_5`",
+        "Exponent controlling the sharpness of the high-mass cutoff",
+    ),
     "n1": (
-        r"\\eta_1",
-        "Exponents to set the sharpness of the lower edge of the lower mass gap( $\\gamma_{low1})$",
+        r":math:`\eta_1`",
+        r"Exponent controlling the lower edge sharpness of the lower mass gap (:math:`\gamma_{low1}`)",
     ),
     "n2": (
-        r"\\eta_2",
-        "Exponents to set the sharpness of upper edge of the lower mass gap ($\\gamma_{high1}$)",
+        r":math:`\eta_2`",
+        r"Exponent controlling the upper edge sharpness of the lower mass gap (:math:`\gamma_{high1}`)",
     ),
     "n3": (
-        r"\\eta_3",
-        "Exponents to set the sharpness of the lower edge of the upper mass gap ($\\gamma_{low2}$)",
+        r":math:`\eta_3`",
+        r"Exponent controlling the lower edge sharpness of the upper mass gap (:math:`\gamma_{low2}`)",
     ),
     "n4": (
-        r"\\eta_4",
-        " Exponents to set the sharpness of the upper edge of the upper mass gap, $\\gamma_{high2}$",
+        r":math:`\eta_4`",
+        r"Exponent controlling the upper edge sharpness of the upper mass gap (:math:`\gamma_{high2}`)",
     ),
 }
 
@@ -156,7 +174,7 @@ rows = []
 for key, (param, desc) in PARAMS_INFO.items():
     if key in maxp_samp:
         val = maxp_samp[key]
-        rows.append((f"${param}$", desc, f"{val:.3g}"))
+        rows.append((f"{param}", desc, f"{val:.3g}"))
 
 df = pd.DataFrame(rows, columns=["Parameter", "Description", "Value"])
 
