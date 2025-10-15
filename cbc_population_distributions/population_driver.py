@@ -168,7 +168,7 @@ def sample_max_post(
     # --- concatenate all chunks + save global outputs ---
     # Save final outputs
     json_file = f"{events_prefix}_all.json"
-    h5_file = f"{events_prefix}_all.h5"
+    h5_file = "GWTC4_BrokenPowerLawTwoPeaks_baseline5_population.hdf5"  # f"{events_prefix}_all.h5"
 
     events = pd.concat(dfs).reset_index(drop=True)
     events.to_json(json_file, indent=4)
