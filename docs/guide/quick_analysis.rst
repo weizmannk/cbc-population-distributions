@@ -13,3 +13,13 @@ Quick analysis notebook
         :shadow:
 
         Open in Colab
+
+.. dropdown:: How do we determine the GW detection rate?
+
+    This notebook explains, step-by-step, how to calculate the GW detection rate.
+
+    .. button-link:: https://colab.research.google.com/github/weizmannk/cbc-population-distributions/blob/main/scripts/detection_rate.ipynb
+        :color: info
+        :shadow:
+
+        Open in Colab
