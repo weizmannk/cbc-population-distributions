@@ -65,5 +65,17 @@ jobs:
           # Branch must not be protected
           branch: main
           allowlist: dependabot[bot],github-actions,pre-commit-ci,pre-commit-ci[bot],pre-commit.ci,pre-commit.ci[bot],bot*
+
+          custom-notsigned-prcomment: |
+              ⚠️ **CLA Signature Required** ⚠️
+
+              Thank you for your contribution! Before we can merge this PR, we need you to sign our Contributor License Agreement (CLA).
+
+              📄 **Read the CLA here:** https://github.com/weizmannk/cbc-population-distributions/blob/main/CLA.md
+
+              ✍️ **To sign, simply post this EXACT comment below:**
+
+              I have read the CLA Document and I sign the CLA
+
           custom-pr-sign-comment: "I have read the CLA Document and I sign the CLA"
           custom-allsigned-prcomment: All Contributors have signed the CLA. ✅
