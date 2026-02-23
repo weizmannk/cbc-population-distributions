@@ -1,4 +1,235 @@
+# """
+# ---------------
+# Module for estimating the number of gravitational-wave compact binary
+# coalescence (CBC) events whose kilonova (KN) counterpart is detectable
+# by ZTF, given a GW170817-like luminosity.
+
+# Designed to be imported in a Jupyter notebook:
+
+#     from kilonova_detection import run_analysis, plot_results
+
+# """
+
+# # coding: utf-8
+# """
+# ---------------------------------------------------------------------------------------------------
+#                                     ABOUT
+# @author         : Ramodgwendé Weizmann KIENDREBEOGO
+# @email          : kiend.weizman7@gmail.com / weizmann.kiendrebeogo@oca.eu
+# @repo           : https://github.com/weizmannk/ObservingScenariosInsights.git
+# @createdOn      : December 2023
+# @description    : Analyzes Compact Binary Coalescence (CBC) events' detection potential
+#                   and sky localization using ZTF for BNS, NSBH, and BBH mergers
+#                   in different observing scenarios (O4, O5).
+
+# ---------------------------------------------------------------------------------------------------
+# """
+
+# import numpy as np
+# from pathlib import Path
+
+# import os
+# from astropy.table import Table
+# from astropy import units as u
+# from astropy.cosmology import Planck15 as cosmo, z_at_value
+# from astropy.coordinates import Distance
+# import astropy.units as u
+
+# import matplotlib.gridspec as gridspec
+# import matplotlib
+# import matplotlib.pyplot as plt
+
+# matplotlib.use("agg")
+
+# matplotlib.rcParams["xtick.labelsize"] = 12.0
+# matplotlib.rcParams["ytick.labelsize"] = 12.0
+# matplotlib.rcParams["legend.fontsize"] = 18
+# matplotlib.rcParams["axes.titlesize"] = 18
+
+# # Colors
+# COLOR_BNS  = "crimson"
+# COLOR_NSBH = "steelblue"
+
+
+# def populations_bool(table, pop, ns_max_mass=3.0):
+#     """Splits Compact Binary Coalescence (CBC) events based on source frame mass."""
+#     z = z_at_value(cosmo.luminosity_distance, table["distance"] * u.Mpc).to_value(
+#         u.dimensionless_unscaled
+#     )
+#     zp1 = z + 1
+#     source_mass1 = table["mass1"] / zp1
+#     source_mass2 = table["mass2"] / zp1
+
+#     if pop == "BNS":
+#         data = (source_mass1 < ns_max_mass) & (source_mass2 < ns_max_mass)
+#     elif pop == "NSBH":
+#         data = (source_mass1 >= ns_max_mass) & (source_mass2 < ns_max_mass)
+#     else:
+#         data = (source_mass1 >= ns_max_mass) & (source_mass2 >= ns_max_mass)
+#     return data
+
+
+# datapath = "../data/runs"
+
+# outdir = "./Plots"
+# if not os.path.isdir(outdir):
+#     os.makedirs(outdir)
+
+# run_names = ["HL", "HLV"]
+# ns_max_mass = 3.0
+
+# # How far can ZTF detect a KN assuming GW170817-like luminosity?
+# Mabs = -16
+# mlim = 22  # assuming clear weather conditions and 300s exposures
+# distmod = mlim - Mabs
+# d = Distance(distmod=distmod, unit=u.Mpc)
+
+# print(f"Distance limit: {d.value} Mpc")
+
+# # this rate from kiendrebeogo et al.2026
+# Number_BNS  = {"HL": 4, "HLV": 6}
+# Number_NSBH = {"HL": 4, "HLV": 6}
+
+# # Figure Plot
+# plt.clf()
+
+# rows, cols = 1, 2
+# gs = gridspec.GridSpec(rows, cols)
+# sax = []
+# for r in range(rows):
+#     for c in range(cols):
+#         sax.append(plt.subplot(gs[cols * r + c]))
+
+# for run_name in run_names:
+
+#     path = Path(f"{datapath}/{run_name}/fullpop4")
+
+#     allsky     = Table.read(str(path / "allsky.dat"),     format="ascii.fast_tab")
+#     injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
+
+#     BNS  = populations_bool(table=injections, pop="BNS",  ns_max_mass=ns_max_mass)
+#     NSBH = populations_bool(table=injections, pop="NSBH", ns_max_mass=ns_max_mass)
+
+#     allsky_BNS  = allsky[BNS].to_pandas()
+#     allsky_NSBH = allsky[NSBH].to_pandas()
+
+#     N_BNS  = Number_BNS[run_name]
+#     N_NSBH = Number_NSBH[run_name]
+
+#     rng = np.random.default_rng(42)
+#     realizations_BNS = [
+#         np.sum(rng.choice(allsky_BNS["distmean"].to_numpy(), N_BNS) < d.value)
+#         for i in range(0, 100000)
+#     ]
+#     realizations_NSBH = [
+#         np.sum(rng.choice(allsky_NSBH["distmean"].to_numpy(), N_NSBH) < d.value)
+#         for i in range(0, 100000)
+#     ]
+
+#     # Percentiles
+#     Ndet_lower  = np.percentile(realizations_BNS, q=5)
+#     Ndet_higher = np.percentile(realizations_BNS, q=95)
+#     Ndet_med    = np.percentile(realizations_BNS, q=50)
+
+#     print(f"The Run {run_name}")
+#     print("\n==Median values==")
+#     print(
+#         "number of detected BNS mergers: %d^{+%d}_{-%d}"
+#         % (Ndet_med, Ndet_higher - Ndet_med, Ndet_med - Ndet_lower)
+#     )
+
+#     Ndet_lower  = np.percentile(realizations_NSBH, q=5)
+#     Ndet_higher = np.percentile(realizations_NSBH, q=95)
+#     Ndet_med    = np.percentile(realizations_NSBH, q=50)
+
+#     print(
+#         "number of detected NSBH mergers: %d^{+%d}_{-%d}"
+#         % (Ndet_med, Ndet_higher - Ndet_med, Ndet_med - Ndet_lower)
+#     )
+
+#     print(" ")
+#     print("**Mean values**")
+#     print("number of detected BNS mergers: %d"  % int(np.round(np.mean(realizations_BNS))))
+#     print("number of detected NSBH mergers: %d" % int(np.round(np.mean(realizations_NSBH))))
+#     print(" ")
+
+#     bins = np.arange(0, 30, 1)
+#     ax = sax[0] if run_name == "HL" else sax[1]
+
+#     ax.hist(
+#         realizations_BNS,
+#         bins=bins,
+#         density=True,
+#         cumulative=True,
+#         histtype="step",
+#         linestyle="--",
+#         color=COLOR_BNS,
+#         linewidth=4,
+#     )
+#     ax.hist(
+#         realizations_NSBH,
+#         bins=bins,
+#         density=True,
+#         cumulative=True,
+#         histtype="step",
+#         linestyle=":",
+#         color=COLOR_NSBH,
+#         linewidth=4,
+#     )
+
+#     if run_name == "HL":
+#         print("yesssss")
+#         # ── NSBH label : décalé à droite de la courbe, dans la zone plate ──
+#         bbox_NSBH = dict(facecolor="white", alpha=0.8, edgecolor=COLOR_NSBH, linestyle=":", linewidth=3)
+#         ax.text(-3.2, 0.69, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
+#         ax.text(-3.67, 0.6, f"<N>={int(np.round(np.mean(realizations_NSBH)))}", fontsize=24)
+
+#         # ── BNS label : centré dans la zone plate après la courbe ──
+#         bbox_BNS = dict(facecolor="white", alpha=0.8, edgecolor=COLOR_BNS, linestyle="--", linewidth=2.5)
+#         ax.text(3.2, 0.2, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
+#         ax.text(2.2, 0.12, f"<N>={int(np.round(np.mean(realizations_BNS)))}", fontsize=24)
+
+#     else:
+#         # ── NSBH label : décalé à droite de la courbe, dans la zone plate ──
+#         bbox_NSBH = dict(facecolor="white", alpha=0.8, edgecolor=COLOR_NSBH, linestyle=":", linewidth=3)
+#         ax.text(-3.2, 0.7, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
+#         ax.text(-3.9, 0.61, f"<N>={int(np.round(np.mean(realizations_NSBH)))}", fontsize=24)
+
+#         # ── BNS label : centré dans la zone plate après la courbe ──
+#         bbox_BNS = dict(facecolor="white", alpha=0.8, edgecolor=COLOR_BNS, linestyle="--", linewidth=2.5)
+#         ax.text(4.5, 0.3, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
+#         ax.text(3.5, 0.2, f"<N>={int(np.round(np.mean(realizations_BNS)))}", fontsize=24)
+
+#     # ── Titre du panneau ──
+#     ax.text(
+#         10, 0.8,
+#         rf" {run_name}",
+#         color="navy",
+#         fontname="Times New Roman",
+#         fontweight="bold",
+#         fontsize=30,
+#     )
+
+#     ax.tick_params(axis="both", labelsize=18, width=2)
+#     for axis in ["top", "bottom", "left", "right"]:
+#         ax.spines[axis].set_linewidth(2)
+
+
+# sax[0].set_ylabel("Cumulative probability density", size=27, fontname="Times New Roman")
+# sax[0].set_xlabel("Number of events", size=27, fontname="Times New Roman")
+# sax[1].set_xlabel("Number of events", size=27, fontname="Times New Roman")
+# sax[0].set_xlim(-4, 25)
+# sax[1].set_xlim(-4, 28.9)
+
+# plt.gcf().set_size_inches(20, 10)
+# plt.subplots_adjust(right=0.9, wspace=0.4, hspace=0.4)
+# plt.tight_layout()
+
+# plt.savefig(f"{outdir}/ndet_22mag_allsky_BNS_NSBH_os2022.pdf")
+# plt.show()
+
 """
+kn_detection.py
 ---------------
 Module for estimating the number of gravitational-wave compact binary
 coalescence (CBC) events whose kilonova (KN) counterpart is detectable
@@ -246,7 +477,6 @@ def _print_summary(run_name, run_results):
 
 def plot_results(
     results,
-    d_max,
     run_names=("HL", "HLV"),
     outdir=None,
     filename="ndet_ZTF_BNS_NSBH.pdf",
@@ -259,8 +489,6 @@ def plot_results(
     ----------
     results : dict
         Output of :func:`run_analysis`.
-    d_max : float
-        ZTF horizon in Mpc (for annotation).
     run_names : list of str
         Ordered list of runs to plot (must match keys in ``results``).
     outdir : str or None
@@ -274,6 +502,27 @@ def plot_results(
     -------
     matplotlib.figure.Figure
     """
+    # Use rc_context to fully isolate rendering settings from gwpy or any
+    # other package that sets text.usetex=True globally. The context manager
+    # restores the original rcParams when it exits, so nothing leaks out.
+
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman"],
+            "text.usetex": True,
+            "font.size": 14,
+            "legend.fontsize": 14,
+            "axes.labelsize": 14,
+            "axes.titlesize": 14,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+            "text.latex.preamble": r"\usepackage{amsmath}",
+            "figure.figsize": (7, 4.5),
+            "savefig.dpi": 300,
+        }
+    )
+    # with matplotlib.rc_context(rc_overrides):
     fig = plt.figure(figsize=(20, 10))
     gs = gridspec.GridSpec(1, len(run_names))
     axes = [fig.add_subplot(gs[i]) for i in range(len(run_names))]
@@ -338,7 +587,6 @@ def plot_results(
             0.8,
             run_name,
             color="navy",
-            fontname="Times New Roman",
             fontweight="bold",
             fontsize=30,
         )
@@ -348,16 +596,17 @@ def plot_results(
         for spine in ax.spines.values():
             spine.set_linewidth(2)
 
-        ax.set_xlabel("Number of events", size=27, fontname="Times New Roman")
+        ax.set_xlabel("Number of events", size=27)
 
         xlim = (-4, 25) if run_name == "HL" else (-4, 28.9)
         ax.set_xlim(*xlim)
 
     axes[0].set_ylabel(
-        "Cumulative probability density", size=27, fontname="Times New Roman"
+        "Cumulative probability density",
+        size=27,
     )
 
-    plt.tight_layout()
+    fig.tight_layout()
 
     if outdir is not None:
         os.makedirs(outdir, exist_ok=True)
