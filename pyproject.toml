@@ -13,14 +13,18 @@ requires-python = ">=3.11"
 
 # Main dependencies
 dependencies = [
+    "ligo.skymap>=2.5.2",
     "gwpopulation[jax]>=1.2.1",
-    "ipython>=9.5.0",
+    "popsummary",
+    "gwpy[astro]",
+    "ipython",
     "pre-commit>=4.3.0",
     "pybtex>=0.25.1",
     "pytest-astropy[test]>=0.11.0",
     "ruff>=0.13.1",
     "seaborn>=0.13.2",
     "sphinx[docs]>=8.2.3",
+    "latex>=0.7.0",
 ]
 
 # CLI entry point
