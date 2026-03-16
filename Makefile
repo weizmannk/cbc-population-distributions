@@ -7,7 +7,7 @@
 # ---- Config (override with: make run NSAMPLES=10000 OUTDIR=out etc...) ----
 
 
-# GWTC-4 hyperparameters file (Broken Power Law + Two Peaks model).
+# GWTC-4 hyperparameters file (FullPop-4.0 model).
 HYP_FILE ?= baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5
 HYP_URL  ?= https://dcc.ligo.org/LIGO-T2500311/public/$(HYP_FILE)
 

@@ -4,7 +4,7 @@ CBC Population Driver
 
 This script provides an interface to generate gravitational-wave (GW) event samples
 using max a posteriori (MAP) parameters from population inference. It implements the
-Broken Power Law + Two Peaks (Gaussian peaks) mass distribution with a power-law
+FullPop-4.0 mass distribution with a power-law
 redshift evolution, the default population model of GWTC-4.
 
 The script extracts MAP hyperparameters from ``gwpopulation``-style result files and draws
@@ -62,8 +62,8 @@ def sample_max_post(
     pairing: bool = True,
 ) -> dict[str, str]:
     """
-    Draw samples from MAP hyperparameters of the Broken
-    Power Law + Two Peaks population model from GWTC-4.
+    Draw samples from MAP hyperparameters of the FullPop-4.0
+    population model from GWTC-4.
 
     Parameters
     ----------
@@ -107,7 +107,7 @@ def sample_max_post(
     #       this means Maximum Likelihood (ML) and Maximum A Posteriori (MAP) coincide.
     # - Select the sample that maximizes this score.
 
-    # Load "Broken Power Law + 2 Peaks model" and extract MAP sample
+    # Load "FullPop-4.0 model" and extract MAP sample
     hyperparams = read_in_result(hyperparams_file)
     maxp_samp = _get_map_sample(hyperparams)
 

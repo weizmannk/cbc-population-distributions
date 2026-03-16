@@ -6,8 +6,8 @@ cbc-population-distributions: CBC Population Distributions from GWTC-4
    :alt: Documentation Status
 
 A pipeline to sample compact binary coalescence (CBC) populations based on the
-Gravitational-Wave Transient Catalog 4 (GWTC-4) models: a Broken Power Law with
-two Gaussian peaks for the component mass distribution, and a Power Law for the
+Gravitational-Wave Transient Catalog 4 (GWTC-4) model, the FullPop-4.0: this include a Broken Power Law with
+two Gaussian peaks for the black hole component mass distribution and neutron start distribution, and a Power Law for the
 redshift distribution.
 
 We provide large-scale sampling (up to one million binaries), which can be used

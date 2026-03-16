@@ -22,6 +22,6 @@ hyperparams_file = (
     "iid_spin_orientation_result.hdf5"
 )
 
-# Load "Broken Power Law + 2 Peaks" model and extract MAP sample
+# Load "FullPop-4.0" model and extract MAP sample
 hyperparams = read_in_result(hyperparams_file)
 maxp_samp = _get_map_sample(hyperparams)

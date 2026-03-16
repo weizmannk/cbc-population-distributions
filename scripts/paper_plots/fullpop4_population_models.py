@@ -19,9 +19,6 @@
 ---------------------------------------------------------------------------------------------------
 """
 
-# ============================================================================
-# Standard-library imports
-# ============================================================================
 import gc
 import logging
 import os
@@ -437,7 +434,7 @@ def fullpop(m: np.ndarray, hyper: pd.Series) -> np.ndarray:
     -------
     np.ndarray
         Un-normalised probability density p(m | λ) evaluated at *m*.
-        Normalise with ``∫ p dm = 1`` before use (see :func:`main`).
+        Normalise with ``integral p dm = 1`` before use (see :func:`main`).
 
     References
     ----------
@@ -577,7 +574,7 @@ def plot_1d_model_comparison(
 ) -> plt.Figure:
     """Plot FullPop-4.0 vs. Power-Law+Dip+Break 1D mass distributions.
 
-    Both curves are normalised so that ∫ m p(m) d(ln m) = 1 and plotted
+    Both curves are normalised so that integral m p(m) d(ln m) = 1 and plotted
     as ``m p(m)`` on a log–log scale.  Vertical lines mark the FullPop-4.0
     model boundaries, which are also annotated on a secondary *x*-axis.
 
