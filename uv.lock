@@ -269,7 +269,6 @@ dependencies = [
     { name = "gwpopulation", extra = ["jax"] },
     { name = "gwpy", extra = ["astro"] },
     { name = "ipython" },
-    { name = "latex" },
     { name = "ligo-skymap" },
     { name = "popsummary" },
     { name = "pre-commit" },
@@ -312,6 +311,11 @@ test = [
     { name = "pytest-astropy" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "astroplan", marker = "extra == 'test'" },
@@ -326,7 +330,6 @@ requires-dist = [
     { name = "joblib", marker = "extra == 'docs'" },
     { name = "jupyter-client", marker = "extra == 'docs'" },
     { name = "jupyter-sphinx", marker = "extra == 'docs'" },
-    { name = "latex", specifier = ">=0.7.0" },
     { name = "ligo-skymap", specifier = ">=2.5.2" },
     { name = "ligo-skymap", marker = "extra == 'docs'", specifier = ">=2.4.0" },
     { name = "memory-profiler", marker = "extra == 'docs'" },
@@ -354,6 +357,9 @@ requires-dist = [
     { name = "sphinxcontrib-typer", marker = "extra == 'docs'" },
 ]
 provides-extras = ["test", "docs"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.3.0" }]
 
 [[package]]
 name = "certifi"
@@ -854,17 +860,6 @@ array = [
 ]
 
 [[package]]
-name = "data"
-version = "0.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "decorator" },
-    { name = "funcsigs" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/e9/623be82fac4250fc614741f5b1ead83d339794f94b19ac8665b6ea12ee05/data-0.4.tar.gz", hash = "sha256:2726a65da1af31e2345b6bba81ae4cee87dddf17f7c62f5c63ba7327a8480667", size = 7042, upload-time = "2015-06-10T22:53:59.635Z" }
-
-[[package]]
 name = "dateparser"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1088,24 +1083,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/de/e0/bab50af11c2d75c9c4a2a26a5254573c0bd97cea152254401510950486fa/fsspec-2025.9.0.tar.gz", hash = "sha256:19fd429483d25d28b65ec68f9f4adc16c17ea2c7c7bf54ec61360d478fb19c19", size = 304847, upload-time = "2025-09-02T19:10:49.215Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/71/70db47e4f6ce3e5c37a607355f80da8860a33226be640226ac52cb05ef2e/fsspec-2025.9.0-py3-none-any.whl", hash = "sha256:530dc2a2af60a414a832059574df4a6e10cce927f6f4a78209390fe38955cfb7", size = 199289, upload-time = "2025-09-02T19:10:47.708Z" },
-]
-
-[[package]]
-name = "funcsigs"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/94/4a/db842e7a0545de1cdb0439bb80e6e42dfe82aaeaadd4072f2263a4fbed23/funcsigs-1.0.2.tar.gz", hash = "sha256:a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50", size = 27947, upload-time = "2016-04-25T22:22:33.882Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/cb/f5be453359271714c01b9bd06126eaf2e368f1fddfff30818754b5ac2328/funcsigs-1.0.2-py2.py3-none-any.whl", hash = "sha256:330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca", size = 17697, upload-time = "2016-04-25T22:22:05.222Z" },
-]
-
-[[package]]
-name = "future"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a7/b2/4140c69c6a66432916b26158687e821ba631a4c9273c474343badf84d3ba/future-1.0.0.tar.gz", hash = "sha256:bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05", size = 1228490, upload-time = "2024-02-21T11:52:38.461Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/71/ae30dadffc90b9006d77af76b393cb9dfbfc9629f339fc1574a1c52e6806/future-1.0.0-py3-none-any.whl", hash = "sha256:929292d34f5872e70396626ef385ec22355a1fae8ad29e1a734c3e43f9fbc216", size = 491326, upload-time = "2024-02-21T11:52:35.956Z" },
 ]
 
 [[package]]
@@ -1779,18 +1756,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9d/62/1fd97c68d2bfe147a27bc79bb3214a7d3a907d2cce515dd89bc6ac5a5120/lalsuite-7.26.1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:02679590d1c9d7caab85a7453923615f64fd422141dafa87abbfc3618cb163e2", size = 38126628, upload-time = "2025-05-23T20:19:53.499Z" },
     { url = "https://files.pythonhosted.org/packages/7e/6b/67ff2d3c34dbf2b9ac00ff6f826c898d2f3240044fd0f472cd1256ac89af/lalsuite-7.26.1-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:70e25745e7ef45621ea68f08ecd1cbb9fb1f4e3c4b390aae6b50c4d5cdea6701", size = 40242939, upload-time = "2025-05-23T20:19:56.503Z" },
 ]
-
-[[package]]
-name = "latex"
-version = "0.7.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "data" },
-    { name = "future" },
-    { name = "shutilwhich" },
-    { name = "tempdir" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/f3/c2562ee509faadaaf4f9d5b9491de146c6522ed2843dcecfd4f8e1a72f1d/latex-0.7.0.tar.gz", hash = "sha256:bf10c3fe27e9f3adccebc12e90ec239c86dcba101b89221f6775918211482a79", size = 6523, upload-time = "2017-11-16T12:33:12.526Z" }
 
 [[package]]
 name = "latexcodec"
@@ -3589,12 +3554,6 @@ wheels = [
 ]
 
 [[package]]
-name = "shutilwhich"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/66/be/783f181594bb8bcfde174d6cd1e41956b986d0d8d337d535eb2555b92f8d/shutilwhich-1.1.0.tar.gz", hash = "sha256:db1f39c6461e42f630fa617bb8c79090f7711c9ca493e615e43d0610ecb64dc6", size = 2300, upload-time = "2015-04-25T14:03:13.563Z" }
-
-[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3872,12 +3831,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
 ]
-
-[[package]]
-name = "tempdir"
-version = "0.7.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/dd/b2/b931869a9f9ad9fa14deecbcfc28e514b0755f8b904d9fe48864951b1a60/tempdir-0.7.1.tar.gz", hash = "sha256:689680ed3ba4cc8347a70e67efc25086ce85b53b9d24a1420899c585bbf7ba8e", size = 5890, upload-time = "2016-03-02T16:42:22.066Z" }
 
 [[package]]
 name = "tinycss2"
