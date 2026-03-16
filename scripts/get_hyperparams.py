@@ -2,45 +2,8 @@ import numpy as np
 import pandas as pd
 from bilby.core.result import read_in_result
 
-# # in ".rst" format
-# def to_rst(df, title="Hyperparameters of the BP2P model"):
-#     lines = []
-#     lines.append(f".. table:: {title}")
-#     lines.append("   :widths: 20 60 20")
-#     lines.append("   :header-rows: 1\n")
-#     lines.append("   * - Parameter")
-#     lines.append("     - Description")
-#     lines.append("     - Value")
-#     for _, row in df.iterrows():
-#         lines.append(f"   * - :math:`{row['Parameter']}`")
-#         lines.append(f"     - {row['Description']}")
-#         lines.append(f"     - {row['Value']}")
-#     return "\n".join(lines)
 
-
-# def to_rst(df, title="Hyperparameters of the BP2P model"):
-#     """
-#     Render dataframe as a reStructuredText grid table with separators.
-#     """
-#     widths = [max(len(str(x)) for x in df[col]) for col in df.columns]
-#     widths = [max(w, len(col)) for w, col in zip(widths, df.columns)]
-
-#     def hline(sep="-"):
-#         return "+" + "+".join(sep * (w + 2) for w in widths) + "+"
-
-#     def row(cells):
-#         return "|" + "|".join(f" {str(c).ljust(w)} " for c, w in zip(cells, widths)) + "|"
-
-
-#     lines = [f".. table:: {title}", ""]
-#     lines.append(hline("="))
-#     lines.append(row(df.columns))
-#     lines.append(hline("="))
-#     for _, r in df.iterrows():
-#         lines.append(row(r))
-#         lines.append(hline())
-#     return "\n".join(lines)
-def to_rst(df, title="Hyperparameters of the BP2P model"):
+def to_rst(df, title="Hyperparameters of the FullPop-4.0 model"):
     widths = [max(len(str(x)) for x in df[col]) for col in df.columns]
     widths = [max(w, len(col)) for w, col in zip(widths, df.columns)]
 
@@ -67,7 +30,7 @@ def to_rst(df, title="Hyperparameters of the BP2P model"):
 
 
 # --- in  LaTeX ---
-def to_latex(df, caption="Hyperparameters of the BP2P model"):
+def to_latex(df, caption="Hyperparameters of the FullPop-4.0 model"):
     out = []
     out.append(r"\begin{table}[ht]")
     out.append(r"\centering")
@@ -99,73 +62,94 @@ def _get_map_sample(hyperparams) -> pd.Series:
 PARAMS_INFO = {
     "alpha_1": (
         r":math:`\alpha_1`",
-        r"Power-law exponent below :math:`\gamma_\mathrm{low1}`",
+        r"Power-law exponent for masses below :math:`m_{\mathrm{max,NS}}`",
     ),
     "alpha_2": (
         r":math:`\alpha_2`",
-        r"Power-law exponent above :math:`\gamma_\mathrm{high1}`",
+        r"Power-law exponent for masses above :math:`m_{\mathrm{min,BH}}`",
     ),
-    "alpha_dip": (r":math:`\alpha_d`", r"Power-law exponent inside the NS–BH mass gap"),
-    "NSmin": (r":math:`m_{\mathrm{min, NS}}`", "Minimum compact object mass"),
-    "NSmax": (r":math:`\gamma_\mathrm{low1}`", "Start of the lower mass gap"),
-    "BHmin": (r":math:`\gamma_\mathrm{high1}`", "End of the lower mass gap"),
+    "alpha_dip": (r":math:`\alpha_d`", r"Power-law exponent within the NS–BH mass gap"),
+    "NSmin": (
+        r":math:`m_{\mathrm{min,NS}}`",
+        r"Minimum neutron star mass (:math:`M_\odot`)",
+    ),
+    "NSmax": (
+        r":math:`\gamma_{\mathrm{low},1}`",
+        r"Maximum neutron star mass (:math:`M_\odot`)",
+    ),
+    "BHmin": (
+        r":math:`\gamma_{\mathrm{high},1}`",
+        r"Minimum black hole mass (:math:`M_\odot`)",
+    ),
     "BHmax": (
-        r":math:`m_{\mathrm{max, BH}}`",
-        "Maximum BH mass in the power-law component",
+        r":math:`m_{\mathrm{max,BH}}`",
+        r"Maximum black hole mass (:math:`M_\odot`)",
     ),
     "A": (
         r":math:`\mathrm{A}`",
-        r"Depth of the dip between :math:`\gamma_{\mathrm{low1}}` and :math:`\gamma_\mathrm{high1}`",
+        r"Depth of primary mass gap suppression",
     ),
-    "UPPERmin": (r":math:`\gamma_\mathrm{low2}`", "Start of the upper (PI) mass gap"),
-    "UPPERmax": (r":math:`\gamma_\mathrm{high2}`", "End of the upper (PI) mass gap"),
-    "mu1": (r":math:`\mu_\mathrm{peak1}`", "Mean of the upper Gaussian peak"),
-    "sig1": (r":math:`\sigma_\mathrm{peak1}`", "Width of the upper Gaussian peak"),
-    "mix1": (r":math:`\mathrm{c}_1`", "Mixing fraction of the upper Gaussian peak"),
+    "UPPERmin": (
+        r":math:`\gamma_{\mathrm{low},2}`",
+        r"Lower boundary of pair-instability gap (:math:`M_\odot`)",
+    ),
+    "UPPERmax": (
+        r":math:`\gamma_{\mathrm{high},2}`",
+        r"Upper boundary of pair-instability gap (:math:`M_\odot`)",
+    ),
+    "mu1": (
+        r":math:`\mu_{\mathrm{peak},1}`",
+        r"Mean of primary Gaussian peak (:math:`M_\odot`)",
+    ),
+    "sig1": (
+        r":math:`\sigma_{\mathrm{peak},1}`",
+        r"Std. dev. of primary Gaussian peak (:math:`M_\odot`)",
+    ),
+    "mix1": (r":math:`\mathrm{c}_1`", r"Mixing fraction of primary Gaussian peak"),
     "mu2": (
-        r":math:`\mu_\mathrm{peak2}`",
-        "Mean of the lower Gaussian peak where an overdensity of merging compact objects is observed",
+        r":math:`\mu_{\mathrm{peak},2}`",
+        r"Mean of secondary Gaussian peak (:math:`M_\odot`)",
     ),
     "sig2": (
-        r":math:`\sigma_\mathrm{peak2}`",
-        "Width of the lower Gaussian peak where an overdensity of merging compact objects is observed",
+        r":math:`\sigma_{\mathrm{peak},2}`",
+        r"Std. dev. of secondary Gaussian peak (:math:`M_\odot`)",
     ),
     "mix2": (
         r":math:`\mathrm{c}_2`",
-        "Mixing fraction of the lower Gaussian peak with the power-law + notches",
+        r"Mixing fraction of secondary Gaussian peak",
     ),
-    "absolute_mmin": (r":math:`m_\mathrm{abs,min}`", "Absolute minimum truncation"),
-    "absolute_mmax": (r":math:`m_\mathrm{abs,max}`", "Absolute maximum truncation"),
+    "absolute_mmin": (r":math:`m_\mathrm{abs,min}`", r"Absolute minimum truncation"),
+    "absolute_mmax": (r":math:`m_\mathrm{abs,max}`", r"Absolute maximum truncation"),
     "n0": (
         r":math:`\eta_0`",
-        "Exponent controlling the sharpness of the low-mass cutoff",
+        r"Sharpness of low-mass truncation",
     ),
     "n5": (
         r":math:`\eta_5`",
-        "Exponent controlling the sharpness of the high-mass cutoff",
+        r"Sharpness of high-mass truncation",
     ),
     "n1": (
         r":math:`\eta_1`",
-        r"Exponent controlling the lower edge sharpness of the lower mass gap (:math:`\gamma_{low1}`)",
+        r"Sharpness at :math:`m_{\mathrm{max,NS}}`",
     ),
     "n2": (
         r":math:`\eta_2`",
-        r"Exponent controlling the upper edge sharpness of the lower mass gap (:math:`\gamma_{high1}`)",
+        r"Sharpness at :math:`m_{\mathrm{min,BH}}`",
     ),
     "n3": (
         r":math:`\eta_3`",
-        r"Exponent controlling the lower edge sharpness of the upper mass gap (:math:`\gamma_{low2}`)",
+        r"Sharpness at :math:`\gamma_{\mathrm{low},2}`",
     ),
     "n4": (
         r":math:`\eta_4`",
-        r"Exponent controlling the upper edge sharpness of the upper mass gap (:math:`\gamma_{high2}`)",
+        r"Sharpness at :math:`\gamma_{\mathrm{high},2}`",
     ),
 }
 
 
 hyperparams_file = "../data/baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5"
 
-# Load "Broken Power Law + 2 Peaks model" and extract MAP sample
+# Load "FullPop-4.0" and extract MAP sample
 hyperparams = read_in_result(hyperparams_file)
 maxp_samp = _get_map_sample(hyperparams)
 

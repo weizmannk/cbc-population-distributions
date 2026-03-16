@@ -1,32 +1,60 @@
-\begin{table}[ht]
+\begin{table}[htb]
+\renewcommand\arraystretch{1.08}
+\setlength{\tabcolsep}{16pt}
 \centering
-\caption{Hyperparameters of the BP2P model}
-\begin{tabular}{lll}
-\hline
-Parameter & Description & Value\\
-\hline
-:math:`\alpha_1` & Power-law exponent below :math:`\gamma_\mathrm{low1}` & -4.51 \\
-:math:`\alpha_2` & Power-law exponent above :math:`\gamma_\mathrm{high1}` & -0.902 \\
-:math:`\alpha_d` & Power-law exponent inside the NS–BH mass gap & -1.68 \\
-:math:`m_{\mathrm{min, NS}}` & Minimum compact object mass & 1.18 \\
-:math:`\gamma_\mathrm{low1}` & Start of the lower mass gap & 4.09 \\
-:math:`\gamma_\mathrm{high1}` & End of the lower mass gap & 7.76 \\
-:math:`m_{\mathrm{max, BH}}` & Maximum BH mass in the power-law component & 152 \\
-:math:`\mathrm{A}` & Depth of the dip between :math:`\gamma_{\mathrm{low1}}` and :math:`\gamma_\mathrm{high1}` & 0.0915 \\
-:math:`\gamma_\mathrm{low2}` & Start of the upper (PI) mass gap & 38.3 \\
-:math:`\gamma_\mathrm{high2}` & End of the upper (PI) mass gap & 66.6 \\
-:math:`\mu_\mathrm{peak1}` & Mean of the upper Gaussian peak & 37.8 \\
-:math:`\sigma_\mathrm{peak1}` & Width of the upper Gaussian peak & 17.1 \\
-:math:`\mathrm{c}_1` & Mixing fraction of the upper Gaussian peak & 735 \\
-:math:`\mu_\mathrm{peak2}` & Mean of the lower Gaussian peak where an overdensity of merging compact objects is observed & 8.9 \\
-:math:`\sigma_\mathrm{peak2}` & Width of the lower Gaussian peak where an overdensity of merging compact objects is observed & 1.04 \\
-:math:`\mathrm{c}_2` & Mixing fraction of the lower Gaussian peak with the power-law + notches & 212 \\
-:math:`\eta_0` & Exponent controlling the sharpness of the low-mass cutoff & 50 \\
-:math:`\eta_5` & Exponent controlling the sharpness of the high-mass cutoff & 10 \\
-:math:`\eta_1` & Exponent controlling the lower edge sharpness of the lower mass gap (:math:`\gamma_{low1}`) & 50 \\
-:math:`\eta_2` & Exponent controlling the upper edge sharpness of the lower mass gap (:math:`\gamma_{high1}`) & 50 \\
-:math:`\eta_3` & Exponent controlling the lower edge sharpness of the upper mass gap (:math:`\gamma_{low2}`) & 30 \\
-:math:`\eta_4` & Exponent controlling the upper edge sharpness of the upper mass gap (:math:`\gamma_{high2}`) & 30 \\
-\hline
+\caption{Hyperparameters of the FullPop-4.0 Distribution Model}
+\label{tab:hyperparams}
+\begin{tabular}{llr}
+\toprule
+\textbf{Parameter} & \textbf{Description} & \textbf{Posterior Value} \\
+\midrule
+\multicolumn{3}{c}{\textit{Mass Distribution}} \\
+\midrule
+$m_{\mathrm{min,NS}}$ & Minimum neutron star mass ($M_\odot$) & $1.18$ \\
+$m_{\mathrm{max,NS}} \equiv \gamma_{\mathrm{low},1}$ & Maximum neutron star mass ($M_\odot$) & $4.09$ \\
+$m_{\mathrm{min,BH}} \equiv \gamma_{\mathrm{high},1}$ & Minimum black hole mass ($M_\odot$) & $7.76$ \\
+$\gamma_{\mathrm{low},2}$  & Lower boundary of pair-instability gap ($M_\odot$) & $38.3$ \\
+$\gamma_{\mathrm{high},2}$ & Upper boundary of pair-instability gap ($M_\odot$) & $66.58$ \\
+$m_{\mathrm{max,BH}}$ & Maximum black hole mass ($M_\odot$) & $152$ \\
+\midrule
+$\alpha_1$ & Power-law exponent for masses below $m_{\mathrm{max,NS}}$ & $-4.51$ \\
+$\alpha_{\mathrm{dip}}$ & Power-law exponent within the NS–BH mass gap & $-1.68$ \\
+$\alpha_2$ & Power-law exponent for masses above $m_{\mathrm{min,BH}}$ & $-0.902$ \\
+\midrule
+$\mu_{\mathrm{peak},1}$ & Mean of primary Gaussian peak ($M_\odot$) & $37.81$ \\
+$\sigma_{\mathrm{peak},1}$ & Std. dev. of primary Gaussian peak ($M_\odot$) & $17.13$ \\
+$c_1$ & Mixing fraction of primary Gaussian peak & $735.47$ \\
+$\mu_{\mathrm{peak},2}$ & Mean of secondary Gaussian peak ($M_\odot$) & $8.9$ \\
+$\sigma_{\mathrm{peak},2}$ & Std. dev. of secondary Gaussian peak ($M_\odot$) & $1.04$ \\
+$c_2$ & Mixing fraction of secondary Gaussian peak & $211.73$ \\
+\midrule
+$A_1$ & Depth of primary mass gap suppression & $0.0915$ \\
+$A_2$ & Depth of pair-instability gap suppression & $0.828$ \\
+
+\midrule
+$\eta_0$ & Sharpness of low-mass truncation & $50$ \\
+$\eta_1$ & Sharpness at $m_{\mathrm{max,NS}}$ & $50$ \\
+$\eta_2$ & Sharpness at $m_{\mathrm{min,BH}}$ & $50$ \\
+$\eta_3$ & Sharpness at $\gamma_{\mathrm{low},2}$ & $30$ \\
+$\eta_4$ & Sharpness at $\gamma_{\mathrm{high},2}$ & $30$ \\
+$\eta_5$ & Sharpness of high-mass truncation & $10$ \\
+
+\midrule
+\multicolumn{3}{c}{\textit{Pairing Function}} \\
+\midrule
+$m_{\mathrm{break}}$ & Pairing function break mass ($M_\odot$) & $5.0$ \\
+$\beta_1$ & Pairing power-law index for $m_2 < m_{\mathrm{break}}$ & $0.964$ \\
+$\beta_2$ & Pairing power-law index for $m_2 \geq m_{\mathrm{break}}$ & $2.16$ \\
+
+\midrule
+\multicolumn{3}{c}{\textit{Spin Distribution}} \\
+\midrule
+$\mu_{\chi}$ & Mean of spin magnitude Gaussian component & $0.0137$ \\
+$\sigma_{\chi}$ & Std. dev. of spin magnitude Gaussian component & $0.31$ \\
+$a_{\mathrm{max}}$ & Maximum spin magnitude & $1$ \\
+\midrule
+$\xi_{\mathrm{spin}}$ & Fraction of BHs in preferentially aligned component & $0.713$ \\
+$\sigma_{\mathrm{spin}}$ & Width of preferentially aligned component & $0.56$ \\
+\bottomrule
 \end{tabular}
 \end{table}
