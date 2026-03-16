@@ -115,6 +115,11 @@ exclude_also = [
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+]
+
 # Package discovery: include only the main code, exclude extras
 [tool.setuptools.packages.find]
 include = ["cbc_population_distributions*"]
