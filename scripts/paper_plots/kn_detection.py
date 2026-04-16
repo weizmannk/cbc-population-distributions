@@ -8,9 +8,8 @@
 @createdOn      : February 2026
 @description    : Module for estimating the number of gravitational-wave compact binary
                   coalescence (CBC) events whose kilonova (KN) counterpart is detectable
-                  by Optica telescope, given a GW170817-like luminosity.
-                  Designed to be imported in a Jupyter notebook:
-                  from kn_detection import run_analysis, plot_results
+                  by optical telescopes, given a GW170817-like luminosity.
+                  Covers IR1 and O5 observing runs.
 """
 
 import os
@@ -151,7 +150,7 @@ def run_analysis(
     Parameters
     ----------
     datapath : str
-        Root path to the simulation data (contains ``<run>/fullpop4/`` folders).
+        Root path to the simulation data (contains ``<run>`` folders).
     run_names : list of str
         List of detector network labels, e.g. ``['HL', 'HLV']``.
     Number_BNS : dict
@@ -182,9 +181,9 @@ def run_analysis(
     """
     # Default event counts (Kiendrebeogo et al. 2026)
     if Number_BNS is None:
-        Number_BNS = {"HL": 4, "HLV": 6}
+        Number_BNS = {"HL": 1, "HLV": 2}
     if Number_NSBH is None:
-        Number_NSBH = {"HL": 4, "HLV": 6}
+        Number_NSBH = {"HL": 2, "HLV": 2}
 
     d_max = ztf_distance_limit(Mabs=Mabs, mlim=mlim)
 
@@ -195,7 +194,7 @@ def run_analysis(
     results = {}
 
     for run_name in run_names:
-        path = Path(datapath) / run_name / "fullpop4"
+        path = Path(datapath) / run_name
         allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
         injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
 
@@ -254,7 +253,7 @@ def plot_results(
     run_names=("HL", "HLV"),
     telescope_name="telescope",
     outdir=None,
-    filename="ndet_BNS_NSBH.png",
+    filename="ndet_BNS_NSBH.pdf",
     show=True,
 ):
     """
@@ -285,9 +284,9 @@ def plot_results(
     gs = gridspec.GridSpec(1, len(run_names))
     axes = [fig.add_subplot(gs[i]) for i in range(len(run_names))]
 
-    fig.suptitle(
-        f"KN detectability  -- {telescope_name}", fontsize=28, fontweight="bold", y=1.02
-    )
+    # fig.suptitle(
+    #     f"KN detectability  -- {telescope_name}", fontsize=28, fontweight="bold", y=1.02
+    # )
 
     bins = np.arange(0, 30, 1)
 
@@ -333,15 +332,15 @@ def plot_results(
         )
 
         if run_name == "HL":
-            ax.text(-3.2, 0.69, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
-            ax.text(-3.67, 0.60, f"<N>={s_NSBH['mean']:.0f}", fontsize=24)
-            ax.text(3.2, 0.20, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
-            ax.text(2.2, 0.12, f"<N>={s_BNS['mean']:.0f}", fontsize=24)
+            ax.text(-3.5, 0.69, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
+            ax.text(-4.2, 0.60, f"<N>={s_NSBH['mean']:.1f}", fontsize=24)
+            ax.text(3.6, 0.20, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
+            ax.text(2.2, 0.12, f"<N>={s_BNS['mean']:.1f}", fontsize=24)
         else:
             ax.text(-3.2, 0.70, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
-            ax.text(-3.9, 0.61, f"<N>={s_NSBH['mean']:.0f}", fontsize=24)
-            ax.text(4.5, 0.30, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
-            ax.text(3.5, 0.20, f"<N>={s_BNS['mean']:.0f}", fontsize=24)
+            ax.text(-4.2, 0.61, f"<N>={s_NSBH['mean']:.1f}", fontsize=24)
+            ax.text(4.9, 0.30, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
+            ax.text(3.5, 0.20, f"<N>={s_BNS['mean']:.1f}", fontsize=24)
 
         # ── Panel title ───────────────────────────────────────────────────
         ax.text(
@@ -360,8 +359,10 @@ def plot_results(
 
         ax.set_xlabel("Number of events", size=27)
 
-        xlim = (-4, 25) if run_name == "HL" else (-4, 28.9)
+        xlim = (-4.8, 20) if run_name == "HL" else (-5, 20)
         ax.set_xlim(*xlim)
+        # xlim = (0, 8) if run_name == "HL" else (0, 10)
+        # ax.set_xlim(*xlim)
 
     axes[0].set_ylabel(
         "Cumulative probability density",
@@ -380,3 +381,43 @@ def plot_results(
         plt.show()
 
     return fig
+
+
+# # ============================================================================
+# # Telescope configurations
+# # ============================================================================
+
+# TELESCOPES = {
+#     "GOTO": {"mlim": 20.0, "Mabs": -16},
+#     "ZTF": {"mlim": 22.0, "Mabs": -16},
+#     "Vera C. Rubin": {"mlim": 25.7, "Mabs": -16},
+# }
+
+
+# # -- Shared config -------------------------------------------------------------
+# COMMON = dict(
+#     datapath="../data/runs/IR1",
+#     run_names=["HL", "HLV"],
+#     Number_BNS={"HL": 1, "HLV": 2},
+#     Number_NSBH={"HL": 2, "HLV": 2},
+#     ns_max_mass=3.0,
+#     n_realizations=100_000,
+#     seed=42,
+#     verbose=True,
+# )
+
+# # Run the analysis
+# for telescope, cfg in TELESCOPES.items():
+#     if telescope == "ZTF":
+#         results, d_max = run_analysis(
+#             **COMMON,
+#             **cfg,
+#             telescope_name=telescope,
+#         )
+#         plot_results(
+#             results,
+#             run_names=COMMON["run_names"],
+#             telescope_name=telescope,
+#             outdir="./",
+#             show=True,
+#         )
