@@ -252,7 +252,7 @@ def plot_results(
     results,
     run_names=("HL", "HLV"),
     telescope_name="telescope",
-    outdir=None,
+    outdir="./",
     filename="ndet_BNS_NSBH.pdf",
     show=True,
 ):
