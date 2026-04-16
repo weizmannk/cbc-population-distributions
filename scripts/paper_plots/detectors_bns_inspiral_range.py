@@ -18,7 +18,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gwpy.astro import inspiral_range
+from gwpy.astro import sensemon_range
 from gwpy.frequencyseries import FrequencySeries
 
 # ============================================================================
@@ -134,8 +134,25 @@ class BNSInspiralRangeCalculator:
 
         return freq, psd
 
-    def calculate_bns_range(self, snr=8, mass=1.4):
+    def _interpolate_psd(self, freq, psd, f0=10.0, fmax=4096.0, df=1.0):
+        """Interpolate PSD onto a uniform linear grid using log-log interpolation.
+
+        This follows the convention used in the official LIGO pipeline
+        (ligo.skymap's make_psd_xmldoc).
+        """
+        # Remove DC component if present
+        mask = freq > 0
+        freq, psd = freq[mask], psd[mask]
+
+        fgrid = np.arange(f0, fmax, df)
+        psd_interp = np.exp(np.interp(np.log(fgrid), np.log(freq), np.log(psd)))
+        return FrequencySeries(psd_interp, f0=f0, df=df)
+
+    def calculate_bns_range(self, snr=8, mass=1.4, fmin=10.0):
         """Print the BNS inspiral range for each run and interferometer.
+
+        Uses sensemon_range (LIGO-T030276), consistent with the official
+        T2500310 projections and the TaylorF2 equation in the paper.
 
         Parameters
         ----------
@@ -147,16 +164,18 @@ class BNSInspiralRangeCalculator:
         for run_name in self.run_names:
             print("\n======================================\n")
             print(f"The BNS range in Run {run_name},")
-            psd_label = "Measured" if run_name.startswith("O4") else "Ideal"
+            psd_label = "Measured" if run_name.startswith("O4") else "Projected"
             print(f"with the {psd_label} PSD\n")
 
             for ifo in self.ifos:
                 if ifo not in self.sensitivity_files.get(run_name, {}):
                     continue
+
                 freq, psd = self.load_data(run_name, ifo)
-                fs = FrequencySeries(psd, f0=freq[0], df=freq[1] - freq[0])
-                bns_range = inspiral_range(
-                    fs, snr=snr, fmin=10, mass1=mass, mass2=mass
+                fs = self._interpolate_psd(freq, psd)
+
+                bns_range = sensemon_range(
+                    fs, snr=snr, fmin=fmin, mass1=mass, mass2=mass
                 ).value
                 print(f"{ifo} BNS Inspiral Range: {round(bns_range, 0)} Mpc")
 
