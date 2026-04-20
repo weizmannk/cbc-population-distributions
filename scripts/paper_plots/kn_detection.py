@@ -2,9 +2,6 @@
 """
 ---------------------------------------------------------------------------------------------------
                                     ABOUT
-@author         : Ramodgwendé Weizmann KIENDREBEOGO
-@email          : kiend.weizman7@gmail.com / weizmann.kiendrebeogo@oca.eu
-@repo           : https://github.com/weizmannk/bns-inspiral-range
 @createdOn      : February 2026
 @description    : Module for estimating the number of gravitational-wave compact binary
                   coalescence (CBC) events whose kilonova (KN) counterpart is detectable
