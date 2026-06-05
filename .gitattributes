@@ -1,2 +1,4 @@
 *.h5 filter=lfs diff=lfs merge=lfs -text
 data/GWTC4_BrokenPowerLawTwoPeaks_baseline5_population.hdf5 filter=lfs diff=lfs merge=lfs -text
+*.hdf filter=lfs diff=lfs merge=lfs -text
+*.hdf5 filter=lfs diff=lfs merge=lfs -text
