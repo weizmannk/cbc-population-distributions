@@ -219,3 +219,6 @@ output/
 
 # file
 .baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5
+data/injections/*.hdf
+data/injections/*.hdf5
+data/**/*.pkl
