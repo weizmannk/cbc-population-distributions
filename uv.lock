@@ -266,10 +266,12 @@ name = "cbc-population-distributions"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "gracedb-sdk" },
     { name = "gwpopulation", extra = ["jax"] },
     { name = "gwpy", extra = ["astro"] },
     { name = "ipython" },
     { name = "ligo-skymap" },
+    { name = "lxml" },
     { name = "popsummary" },
     { name = "pre-commit" },
     { name = "pybtex" },
@@ -320,6 +322,7 @@ dev = [
 requires-dist = [
     { name = "astroplan", marker = "extra == 'test'" },
     { name = "dask", marker = "extra == 'docs'" },
+    { name = "gracedb-sdk" },
     { name = "graphviz", marker = "extra == 'docs'" },
     { name = "gwpopulation", extras = ["jax"], specifier = ">=1.2.1" },
     { name = "gwpy", extras = ["astro"] },
@@ -332,6 +335,7 @@ requires-dist = [
     { name = "jupyter-sphinx", marker = "extra == 'docs'" },
     { name = "ligo-skymap", specifier = ">=2.5.2" },
     { name = "ligo-skymap", marker = "extra == 'docs'", specifier = ">=2.4.0" },
+    { name = "lxml" },
     { name = "memory-profiler", marker = "extra == 'docs'" },
     { name = "nbconvert", marker = "extra == 'docs'" },
     { name = "nbsphinx", marker = "extra == 'docs'" },
@@ -1097,6 +1101,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/f6/9210f6491a000c0f5809e4b0b1c31c368657fc403ebc6464764f34da074a/gpstime-0.10.0.tar.gz", hash = "sha256:242d45f1a7ed6f293a82b13880f25fcf3c994650770825121d8f5b3f2ccae026", size = 25593, upload-time = "2026-02-05T23:16:27.099Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/63/2cd46930494a3dec63769ca8b00244ba7944d738ef4afb6331f5b2f51973/gpstime-0.10.0-py3-none-any.whl", hash = "sha256:279b9fffdf64c1fb152c87de6119d0ee76d8dcb3de483106e87da181176169af", size = 26747, upload-time = "2026-02-05T23:16:25.716Z" },
+]
+
+[[package]]
+name = "gracedb-sdk"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests-gracedb" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6f/33/7349766be834c18e3dc9575fe3cbf1cc34746c1d24fff0a2b3bee52d4ae4/gracedb_sdk-0.2.1.tar.gz", hash = "sha256:877680ad79b91b85eb291da7a5c31cd2eb1000c9659c9dfd87dbf8a01e092028", size = 35495, upload-time = "2025-04-18T19:31:52.398Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/0d/ffc7080faa799c8a0b8289385a093fa37b78c2f9d6748cfbb23fab5f2362/gracedb_sdk-0.2.1-py3-none-any.whl", hash = "sha256:32bc41e8436aeafc80a021d9d9f7e2b5bbbf3e2e2ef305e023824864c43f270e", size = 27698, upload-time = "2025-04-18T19:31:51.201Z" },
 ]
 
 [[package]]
@@ -3226,6 +3242,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/34/64/8860370b167a9721e8956ae116825caff829224fbca0ca6e7bf8ddef8430/requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652", size = 134232, upload-time = "2026-03-25T15:10:41.586Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/5d/c814546c2333ceea4ba42262d8c4d55763003e767fa169adc693bd524478/requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b", size = 65017, upload-time = "2026-03-25T15:10:40.382Z" },
+]
+
+[[package]]
+name = "requests-gracedb"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "igwn-auth-utils" },
+    { name = "pyjwt" },
+    { name = "requests" },
+    { name = "safe-netrc" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/0f/641a6bf75b86ccd4eb3a4befa3c6c977de47eee512c6d9fc44809a0fe3b4/requests_gracedb-1.0.0.tar.gz", hash = "sha256:29ea4e8279cc1a77c331d0a9f5f6164f38efaf859dc97805ac5ffca729d60207", size = 26779, upload-time = "2026-02-19T19:16:53.159Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/bb/81495e574d7611fde42a403888190a04618cbeef1a096105896cebb6ed05/requests_gracedb-1.0.0-py3-none-any.whl", hash = "sha256:5a7149ba2c50aeae01da3125a927451b189ca0b8229ea4e3028884795194fd1e", size = 21695, upload-time = "2026-02-19T19:16:52.149Z" },
 ]
 
 [[package]]

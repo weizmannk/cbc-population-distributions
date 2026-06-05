@@ -16,6 +16,8 @@ dependencies = [
     "ligo.skymap>=2.5.2",
     "gwpopulation[jax]>=1.2.1",
     "popsummary",
+    "gracedb-sdk",
+    "lxml",
     "gwpy[astro]",
     "ipython",
     "pre-commit>=4.3.0",
