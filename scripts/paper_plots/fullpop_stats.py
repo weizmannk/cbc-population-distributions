@@ -1,0 +1,922 @@
+# Summary plots and tables
+
+
+## Imports
+
+import io
+import shutil
+from pathlib import Path
+
+import numpy as np
+import seaborn
+from astropy import units as u
+from astropy.cosmology import Planck15 as cosmo
+from astropy.cosmology import z_at_value
+from astropy.table import Table, join
+from IPython.display import Markdown
+from ligo.skymap.util import sqlite
+from matplotlib import pyplot as plt
+from scikits import bootstrap
+from scipy import integrate, optimize, special, stats
+from tqdm.auto import tqdm
+
+#: Anchor on this file's own location, not the caller's cwd.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parent.parent
+DATA_DIR = _REPO_ROOT / "data"
+
+# Same Times/LaTeX convention as fullpop_population_models.py, not
+# plt.style.use("seaborn-v0_8-paper"), which would reset font.family and
+# text.usetex back to matplotlib's defaults.
+USE_LATEX = shutil.which("latex") is not None
+plt.rcParams.update(
+    {
+        "font.family": "Times New Roman",
+        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+        "text.usetex": USE_LATEX,
+        "font.size": 12,
+        "legend.fontsize": 14,
+        "axes.labelsize": 12,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 16,
+        "ytick.labelsize": 16,
+        "savefig.dpi": 300,
+    }
+)
+
+
+## Common functions
+
+
+def betabinom_k_n(k, n):
+    return stats.betabinom(n, k + 1, n - k + 1)
+
+
+@np.vectorize
+def poisson_lognormal_rate_cdf(k, mu, sigma):
+    lognorm_pdf = stats.lognorm(s=sigma, scale=np.exp(mu)).pdf
+
+    def func(lam):
+        prior = lognorm_pdf(lam)
+        # poisson_pdf = np.exp(special.xlogy(k, lam) - special.gammaln(k + 1) - lam)
+        poisson_cdf = special.gammaincc(k + 1, lam)
+        return poisson_cdf * prior
+
+    # Marginalize over lambda.
+    #
+    # Note that we use scipy.integrate.odeint instead
+    # of scipy.integrate.quad because it is important for the stability of
+    # root_scalar below that we calculate the pdf and the cdf at the same time,
+    # using the same exact quadrature rule.
+    cdf, _ = integrate.quad(func, 0, np.inf, epsabs=0)
+    return cdf
+
+
+@np.vectorize
+def poisson_lognormal_rate_quantiles(p, mu, sigma):
+    """Find the quantiles of a Poisson distribution with
+    a log-normal prior on its rate.
+
+    Parameters
+    ----------
+    p : float
+        The quantiles at which to find the number of counts.
+    mu : float
+        The mean of the log of the rate.
+    sigma : float
+        The standard deviation of the log of the rate.
+
+    Returns
+    -------
+    k : float
+        The number of events.
+
+    Notes
+    -----
+    This algorithm treats the Poisson count k as a continuous
+    real variable so that it can use the scipy.optimize.root_scalar
+    root finding/polishing algorithms.
+    """
+
+    def func(k):
+        return poisson_lognormal_rate_cdf(k, mu, sigma) - p
+
+    if func(0) >= 0:
+        return 0
+
+    result = optimize.root_scalar(func, bracket=[0, 1e6])
+    return result.root
+
+
+def format_with_errorbars(mid, lo, hi):
+    plus = hi - mid
+    minus = mid - lo
+    smallest = min(max(0, plus), max(0, minus))
+
+    if smallest == 0:
+        return str(mid), "0", "0"
+    decimals = 1 - int(np.floor(np.log10(smallest)))
+
+    if all(np.issubdtype(type(_), np.integer) for _ in (mid, lo, hi)):
+        decimals = min(decimals, 0)
+
+    plus, minus, mid = np.round([plus, minus, mid], decimals)
+    if decimals > 0:
+        fstring = "%%.0%df" % decimals
+    else:
+        fstring = "%d"
+    return [fstring % _ for _ in [mid, minus, plus]]
+
+
+## Settings
+
+alpha = 0.9  # Confidence band for histograms
+run_names = run_dirs = [
+    "O4a",
+    "O4b",
+]  # ["O4-HL", "O4-HLV", "O5a-HL", "O5a-HLV", "O5b-HLV", "O5c-HLV"]
+pops = ["BNS", "NSBH", "BBH"]  # Populations
+classification_names = pops
+classification_colors = seaborn.color_palette(n_colors=len(classification_names))
+fieldnames = ["area(90)", "vol(90)", "distance"]
+fieldlabels = [
+    "90% cred. area (deg²)",
+    "90% cred. comoving volume (10⁶ Mpc³)",
+    "Luminosity distance (Mpc)",
+]
+
+
+## Fiducial rates in Gpc$^{-3}$ yr$^{-1}$
+
+# The whole simulated population (BNS+NSBH+BBH together) is drawn from a
+# single normalised model at a single combined rate, not from three
+# independently-normalised populations. Splitting that same combined rate
+# by each class's mass fraction *in the simulated population* is what
+# keeps the normalisation self-consistent with what was actually
+# simulated. Using the published per-class rates directly (Table 2) would
+# instead mix in a separate, independently-derived selection-effect
+# correction per class that has no reason to match this simulation's own
+# normalisation, so it is never used here.
+#
+# The combined rate comes from data/derived/rate_summary.csv (built by
+# scripts/hyperparams/get_hyperparams.py), giving the median and 5%/95%
+# interval of the FullPop/PixelPop total `rate` posterior (GWTC-5.0's own
+# median convention, see get_hyperparams.py's compute_rate_summary_fullpop
+# and compute_rate_summary_pixelpop for how it's derived). Run
+# get_hyperparams.py to (re)build it.
+_rate_summary = Table.read(
+    DATA_DIR / "derived" / "rate_summary.csv", format="ascii.csv"
+)
+
+
+def _combined_rate_table(label):
+    """A (BNS, NSBH, BBH) rates table with the same combined (lower, mid,
+    upper) repeated in every row, still needing a mass-fraction split."""
+    (row,) = _rate_summary[_rate_summary["label"] == label]
+    return Table(
+        [
+            {
+                "population": pop,
+                "lower": row["lower_5"],
+                "mid": row["median"],
+                "upper": row["upper_95"],
+            }
+            for pop in ["BNS", "NSBH", "BBH"]
+        ]
+    )
+
+
+rates_table_fullpop = _combined_rate_table("GWTC-5.0 FullPop")
+rates_table_pixelpop = _combined_rate_table("GWTC-5.0 PixelPop")
+
+# For splitting into BNS, NSBH, and BBH populations.
+# Note that p_astro uses 3 Msun but GWTC-5.0 uses 2.5.
+ns_max_mass = 2.5
+
+
+def add_lognormal_params(rates_table):
+    """Attach log-normal (mu, sigma) parameters derived from each row's
+    (lower, mid, upper) 5%/50%/95% quantiles."""
+    (standard_90pct_interval,) = np.diff(stats.norm.interval(0.9))
+    rates_table["mu"] = np.log(rates_table["mid"])
+    rates_table["sigma"] = (
+        np.log(rates_table["upper"]) - np.log(rates_table["lower"])
+    ) / standard_90pct_interval
+    return rates_table
+
+
+def add_mass_fraction_and_lognormal(rates_table, cbc_h5_path):
+    """Attach a per-class mass fraction (from a CBC sample file's mass1/mass2
+    columns), use it to split the combined rate in each row into a
+    per-class rate, and attach log-normal (mu, sigma) parameters.
+    """
+    table = Table.read(cbc_h5_path)
+    m1, m2 = table["mass1"], table["mass2"]
+    rates_table["mass_fraction"] = np.asarray(
+        [
+            np.sum((m1 < ns_max_mass) & (m2 < ns_max_mass)),
+            np.sum((m1 >= ns_max_mass) & (m2 < ns_max_mass)),
+            np.sum((m1 >= ns_max_mass) & (m2 >= ns_max_mass)),
+        ]
+    ) / len(table)
+    for key in ["lower", "mid", "upper"]:
+        rates_table[key] = rates_table[key] * rates_table["mass_fraction"]
+    return add_lognormal_params(rates_table)
+
+
+add_mass_fraction_and_lognormal(
+    rates_table_fullpop, DATA_DIR / "raw" / "fullpop_gwtc5.h5"
+)
+add_mass_fraction_and_lognormal(rates_table_pixelpop, DATA_DIR / "raw" / "pixelpop.h5")
+
+# The rest of this script (data loading, plots, tabulated stats) is written
+# for a single fiducial model at a time. FullPop is the one currently wired
+# through; rates_table_pixelpop is ready to be swapped in the same way once
+# the run tables below also load PixelPop injections.
+rates_table = rates_table_fullpop
+rates_table
+
+
+fiducial_log_rates = np.asarray(rates_table["mu"])
+fiducial_log_rate_errs = np.asarray(rates_table["sigma"])
+
+
+## Load all data sets
+
+tables = {}
+for run_name, run_dir in zip(tqdm(run_names), run_dirs):
+    path = Path("../../runs") / run_dir / "fullpop"
+    allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
+    injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
+    allsky.rename_column("coinc_event_id", "event_id")
+    injections.rename_column("simulation_id", "event_id")
+    table = join(allsky, injections)
+
+    # Convert from Mpc^3 to 10^6 Mpc^3
+    for colname in ["searched_vol", "vol(20)", "vol(50)", "vol(90)"]:
+        table[colname] *= 1e-6
+
+    with sqlite.open(str(path / "events.sqlite"), "r") as db:
+        # Get simulated rate from LIGO-LW process table
+        ((result,),) = db.execute(
+            "SELECT comment FROM process WHERE program = ?", ("bayestar-inject",)
+        )
+        table.meta["rate"] = u.Quantity(result)
+
+        # Get simulated detector network from LIGO-LW process table
+        ((result,),) = db.execute(
+            "SELECT ifos FROM process WHERE program = ?", ("bayestar-realize-coincs",)
+        )
+        table.meta["network"] = result.replace("1", "").replace(",", "")
+
+        # Get number of Monte Carlo samples from LIGO-LW process_params table
+        ((result,),) = db.execute(
+            "SELECT value FROM process_params WHERE program = ? AND param = ?",
+            ("bayestar-inject", "--nsamples"),
+        )
+        table.meta["nsamples"] = int(result)
+
+    # Split by source frame mass
+    z = z_at_value(cosmo.luminosity_distance, table["distance"] * u.Mpc).to_value(
+        u.dimensionless_unscaled
+    )
+    zp1 = z + 1
+    source_mass1 = table["mass1"] / zp1
+    source_mass2 = table["mass2"] / zp1
+    tables[run_name] = {}
+    # Note: copy() below so that we deep-copy table.meta
+    tables[run_name]["BNS"] = table[
+        (source_mass1 < ns_max_mass) & (source_mass2 < ns_max_mass)
+    ].copy()
+    tables[run_name]["NSBH"] = table[
+        (source_mass1 >= ns_max_mass) & (source_mass2 < ns_max_mass)
+    ].copy()
+    tables[run_name]["BBH"] = table[
+        (source_mass1 >= ns_max_mass) & (source_mass2 >= ns_max_mass)
+    ].copy()
+
+    for key in ["BNS", "NSBH", "BBH"]:
+        (rates_row,) = rates_table[rates_table["population"] == key]
+        tables[run_name][key].meta["rate"] *= rates_row["mass_fraction"]
+
+    del allsky, injections, table, z, zp1, source_mass1, source_mass2
+
+
+############
+
+axs = [plt.subplots()[1] for _ in range(len(fieldnames))]
+colors = seaborn.color_palette("colorblind", len(tables))
+linestyles = ["-", "--", ":"]
+
+for ax, fieldlabel in zip(axs, fieldlabels):
+    ax.set_xlabel(fieldlabel)
+
+for ax in axs:
+    ax.set_xscale("log")
+    ax.set_ylim(0, 1)
+    ax.set_yticks([0, 0.25, 0.50, 0.75, 1])
+    ax.set_ylabel("Cumulative fraction of events")
+    ax.legend(
+        [
+            plt.Line2D([], [], linestyle=linestyle, color="black")
+            for linestyle in linestyles
+        ]
+        + [plt.Rectangle((0, 0), 0, 0, facecolor=color) for color in colors],
+        pops + run_names,
+    )
+
+axs[0].set_xlim(1e-1, 86400)
+axs[1].set_xlim(1e-5, 1e4)
+axs[2].set_xlim(1e1, 1e4)
+
+ax = axs[2]
+zax = ax.twiny()
+zax.set_xlim(*ax.get_xlim())
+zax.set_xscale(ax.get_xscale())
+
+zax.minorticks_off()
+n = np.arange(2, 10)
+z = np.concatenate([0.001 * n, 0.01 * n, 0.1 * n, n])
+minor = cosmo.luminosity_distance(z).to_value(u.Mpc)
+minor = minor[minor > ax.get_xlim()[0]]
+minor = minor[minor < ax.get_xlim()[1]]
+zax.set_xticks(minor, minor=True)
+zax.set_xticklabels([], minor=True)
+
+z = [0.01, 0.1, 1]
+zax.set_xticks(cosmo.luminosity_distance(z).to_value(u.Mpc))
+zax.set_xticklabels([str(_) for _ in z])
+zax.set_xlabel("Redshift")
+
+for irun, (run_name, tables1) in enumerate(tables.items()):
+    for ipop, (pop, table) in enumerate(tables1.items()):
+        for ifield, fieldname in enumerate(fieldnames):
+            data = table[fieldname]
+            data = data[np.isfinite(data) & (data > 0)]
+            print(
+                f"Field {ifield}: min={np.min(data)}, max={np.max(data)}, "
+                f"zeros={np.sum(data == 0)}, negatives={np.sum(data < 0)}, NANs={np.sum(np.isnan(data))}"
+            )
+            ax = axs[ifield]
+            t = np.geomspace(*ax.get_xlim(), 100)
+            kde = stats.gaussian_kde(np.asarray(np.log(data)))
+            ((std,),) = np.sqrt(kde.covariance)
+            y = (
+                stats.norm(kde.dataset.ravel(), std)
+                .cdf(np.log(t)[:, np.newaxis])
+                .mean(1)
+            )
+            ax.plot(t, y, color=colors[irun], linestyle=linestyles[ipop])
+
+for ax, fieldname in zip(axs, fieldnames):
+    ax.figure.savefig(f"../../runs/{fieldname}.pdf")
+    ax.figure.savefig(f"../../runs/{fieldname}.svg")
+
+# Comparisons with O4 public alerts
+o4_data = Table.read("../../runs/public-alerts.dat", format="ascii")
+o4_data["vol(90)"] *= 1e-6
+
+o4_data_by_classification = o4_data.group_by(o4_data["classification"]).groups
+o4_data_by_classification = dict(
+    zip(o4_data_by_classification.keys, o4_data_by_classification)
+)
+
+o4_data
+
+run_name = "O4b"
+
+fig, axs = plt.subplots(
+    len(pops),
+    len(fieldnames),
+    sharex="col",
+    sharey=True,
+    gridspec_kw=dict(bottom=0.08, left=0.08, top=0.92, right=0.95),
+    figsize=(7.3, 6),
+)
+
+for ax, fieldlabel in zip(axs[-1], fieldlabels):
+    ax.set_xlabel(fieldlabel)
+    ax.set_xscale("log")
+
+ax = axs[1][0]
+ax.set_ylim(0, 1)
+ax.set_yticks([0, 0.25, 0.50, 0.75, 1])
+ax.set_ylabel("Cumulative fraction of events")
+
+axs[0, 0].set_xlim(1e0, 86400)
+axs[0, 1].set_xlim(1e-3, 1e4)
+axs[0, 2].set_xlim(1e1, 1e4)
+
+for pop, color, ax in zip(pops, classification_colors, axs[:, 0]):
+    ax.text(0.05, 0.95, pop, transform=ax.transAxes, color=color, va="top")
+
+for ax in axs[::-1, fieldnames.index("distance")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    n = np.arange(2, 10)
+    z = np.concatenate([0.001 * n, 0.01 * n, 0.1 * n, n])
+    minor = cosmo.luminosity_distance(z).to_value(u.Mpc)
+    minor = minor[minor > ax.get_xlim()[0]]
+    minor = minor[minor < ax.get_xlim()[1]]
+    ax2.set_xticks(minor, minor=True)
+    ax2.set_xticklabels([], minor=True)
+
+    z = [0.01, 0.1, 1]
+    ax2.set_xticks(cosmo.luminosity_distance(z).to_value(u.Mpc))
+ax2.set_xticklabels([f"$z$={_}" for _ in z])
+
+for ax in axs[::-1, fieldnames.index("area(90)")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    ticks = [3, 9.6, 47]
+    ticklabels = ["DECam", "VRO", "ZTF"]
+    ax2.set_xticks(ticks)
+ax2.set_xticklabels(ticklabels)
+label1, *_ = ax2.xaxis.get_ticklabels()
+label1.set_ha("right")
+
+for pop, color, axrow in zip(pops, classification_colors, axs):
+    for fieldname, ax in zip(fieldnames, axrow):
+        medians = []
+        for data, label, linewidth in [
+            # [old_tables[pop][fieldname], "LRR", 0.5 * plt.rcParams["lines.linewidth"]],
+            [
+                tables[run_name][pop][fieldname],
+                "O4b simulation",
+                plt.rcParams["lines.linewidth"],
+            ],
+        ]:
+            data = data[np.isfinite(data) & (data > 0)]
+            medians.append(np.median(data))
+            kde = stats.gaussian_kde(np.asarray(np.log(data)))
+            ((std,),) = np.sqrt(kde.covariance)
+            t = np.geomspace(*ax.get_xlim(), 100)
+            y = (
+                stats.norm(kde.dataset.ravel(), std)
+                .cdf(np.log(t)[:, np.newaxis])
+                .mean(1)
+            )
+            ax.plot(t, y, color=color, linewidth=linewidth, label=label)
+
+        # if fieldname != "distance":
+        #     ax.annotate(
+        #         "",
+        #         (medians[1], 0.5),
+        #         (medians[0], 0.5),
+        #         arrowprops=dict(
+        #             arrowstyle="-|>",
+        #             color=color,
+        #             shrinkA=4,
+        #             shrinkB=4,
+        #             linewidth=plt.rcParams["lines.linewidth"],
+        #         ),
+        #     )
+
+        try:
+            data = o4_data_by_classification[pop][fieldname]
+        except KeyError:
+            continue
+        t = np.minimum(
+            np.concatenate(((-np.inf,), np.sort(data))), 10 * ax.get_xlim()[-1]
+        )
+        y = np.arange(len(data) + 1) / len(data)
+        ax.plot(t, y, color="black", drawstyle="steps-post", label="O4 alerts")
+
+axs[-1, -1].legend(frameon=False)
+fig.align_labels()
+fig.savefig("../../runs/o4-comparison.pdf")
+fig.savefig("../../runs/o4-comparison.svg")
+
+
+## Projections for next several observing runs
+
+# linestyles = ["-", "--", ":", "-."]
+linestyles = ["-", "--", ":", "-.", (0, (3, 1, 1, 1))]
+fig, axs = plt.subplots(
+    len(pops),
+    len(fieldnames),
+    sharex="col",
+    sharey=True,
+    gridspec_kw=dict(bottom=0.08, left=0.08, top=0.92, right=0.95),
+    figsize=(7.3, 6),
+)
+
+for ax, fieldlabel in zip(axs[-1], fieldlabels):
+    ax.set_xlabel(fieldlabel)
+    ax.set_xscale("log")
+
+ax = axs[1][0]
+ax.set_ylim(0, 1)
+ax.set_yticks([0, 0.25, 0.50, 0.75, 1])
+ax.set_ylabel("Cumulative fraction of events")
+
+axs[0, 0].set_xlim(1e0, 86400)
+axs[0, 1].set_xlim(1e-3, 1e4)
+axs[0, 2].set_xlim(1e1, 1e4)
+
+for pop, color, ax in zip(pops, classification_colors, axs[:, 0]):
+    ax.text(0.05, 0.95, pop, transform=ax.transAxes, color=color, va="top")
+
+for ax in axs[::-1, fieldnames.index("distance")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    n = np.arange(2, 10)
+    z = np.concatenate([0.001 * n, 0.01 * n, 0.1 * n, n])
+    minor = cosmo.luminosity_distance(z).to_value(u.Mpc)
+    minor = minor[minor > ax.get_xlim()[0]]
+    minor = minor[minor < ax.get_xlim()[1]]
+    ax2.set_xticks(minor, minor=True)
+    ax2.set_xticklabels([], minor=True)
+
+    z = [0.01, 0.1, 1]
+    ax2.set_xticks(cosmo.luminosity_distance(z).to_value(u.Mpc))
+ax2.set_xticklabels([f"$z$={_}" for _ in z])
+
+for ax in axs[::-1, fieldnames.index("area(90)")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    ticks = [3, 9.6, 47]
+    ticklabels = ["DECam", "VRO", "ZTF"]
+    ax2.set_xticks(ticks)
+ax2.set_xticklabels(ticklabels)
+label1, *_ = ax2.xaxis.get_ticklabels()
+label1.set_ha("right")
+
+for pop, color, axrow in zip(pops, classification_colors, axs):
+    for fieldname, ax in zip(fieldnames, axrow):
+        for run_name, linestyle in zip(run_names, linestyles):
+            data = tables[run_name][pop][fieldname]
+
+            data = data[np.isfinite(data) & (data > 0)]
+            medians.append(np.median(data))
+            kde = stats.gaussian_kde(np.asarray(np.log(data)))
+            ((std,),) = np.sqrt(kde.covariance)
+            t = np.geomspace(*ax.get_xlim(), 100)
+            y = (
+                stats.norm(kde.dataset.ravel(), std)
+                .cdf(np.log(t)[:, np.newaxis])
+                .mean(1)
+            )
+            ax.plot(
+                t,
+                y,
+                color=color,
+                linestyle=linestyle,
+                linewidth=linewidth,
+                label=run_name,
+            )
+
+axs[-1, -1].legend()
+fig.align_labels()
+fig.savefig("../../runs/predictions.pdf")
+fig.savefig("../../runs/predictions.svg")
+
+linestyles = ["-", "--", ":", "-.", (0, (3, 1, 1, 1))]
+
+fig, axs = plt.subplots(
+    len(pops),
+    len(fieldnames),
+    sharex="col",
+    sharey=True,
+    gridspec_kw=dict(bottom=0.08, left=0.08, top=0.92, right=0.95),
+    figsize=(7.3, 6),
+)
+
+for ax, fieldlabel in zip(axs[-1], fieldlabels):
+    ax.set_xlabel(fieldlabel)
+    ax.set_xscale("log")
+
+ax = axs[1][0]
+ax.set_ylim(1, 1000)
+ax.set_yscale("log")
+ax.set_ylabel("Cumulative detection rate (events / year)")
+
+axs[0, 0].set_xlim(1e0, 86400)
+axs[0, 1].set_xlim(1e-3, 1e4)
+axs[0, 2].set_xlim(1e1, 1e4)
+
+for pop, color, ax in zip(pops, classification_colors, axs[:, 0]):
+    ax.text(0.05, 0.95, pop, transform=ax.transAxes, color=color, va="top")
+
+for ax in axs[::-1, fieldnames.index("distance")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    n = np.arange(2, 10)
+    z = np.concatenate([0.001 * n, 0.01 * n, 0.1 * n, n])
+    minor = cosmo.luminosity_distance(z).to_value(u.Mpc)
+    minor = minor[minor > ax.get_xlim()[0]]
+    minor = minor[minor < ax.get_xlim()[1]]
+    ax2.set_xticks(minor, minor=True)
+    ax2.set_xticklabels([], minor=True)
+
+    z = [0.01, 0.1, 1]
+    ax2.set_xticks(cosmo.luminosity_distance(z).to_value(u.Mpc))
+ax2.set_xticklabels([f"$z$={_}" for _ in z])
+
+for ax, pop, fiducial_log_rate in zip(
+    axs[::-1, fieldnames.index("distance")],
+    reversed(pops),
+    reversed(fiducial_log_rates),
+):
+    ax3 = ax.twinx()
+    ax3.set_ylim(*ax.get_ylim())
+    ax3.set_yscale(ax.get_yscale())
+    ax3.set_yticks(
+        [
+            len(tables[run_name][pop])
+            * np.exp(fiducial_log_rate)
+            / tables[run_name][pop].meta["rate"].to_value(u.Gpc**-3 * u.yr**-1)
+            for run_name in run_names
+        ]
+    )
+    ax3.set_yticklabels(run_names)
+    ax3.tick_params(length=0)
+    ax3.minorticks_off()
+
+for ax in axs[::-1, fieldnames.index("area(90)")]:
+    ax2 = ax.twiny()
+    ax2.set_xlim(*ax.get_xlim())
+    ax2.set_xscale(ax.get_xscale())
+
+    ax2.minorticks_off()
+    ticks = [3, 9.6, 47]
+    ticklabels = ["DECam", "VRO", "ZTF"]
+    ax2.set_xticks(ticks)
+ax2.set_xticklabels(ticklabels)
+label1, *_ = ax2.xaxis.get_ticklabels()
+label1.set_ha("right")
+
+for pop, color, axrow in zip(pops, classification_colors, axs):
+    for fieldname, ax in zip(fieldnames, axrow):
+        ax.grid()
+        for run_name, linestyle in zip(reversed(run_names), reversed(linestyles)):
+            data = tables[run_name][pop][fieldname]
+            (rate_row,) = rates_table[rates_table["population"] == pop]
+
+            # data = data[np.isfinite(data)]
+            data = data[np.isfinite(data) & (data > 0)]
+            medians.append(np.median(data))
+            kde = stats.gaussian_kde(np.asarray(np.log(data)))
+            ((std,),) = np.sqrt(kde.covariance)
+            t = np.geomspace(*ax.get_xlim(), 100)
+            y = (
+                stats.norm(kde.dataset.ravel(), std)
+                .cdf(np.log(t)[:, np.newaxis])
+                .mean(1)
+            )
+            scale = len(data) / tables[run_name][pop].meta["rate"].to_value(
+                u.Gpc**-3 * u.yr**-1
+            )
+            ymid = y * scale * rate_row["mid"]
+            ylo = y * scale * rate_row["lower"]
+            yhi = y * scale * rate_row["upper"]
+            ax.plot(
+                t,
+                ymid,
+                color=color,
+                linestyle=linestyle,
+                linewidth=linewidth,
+                label=run_name,
+            )
+            ax.fill_between(t, ylo, yhi, color=color, alpha=0.25)
+
+fig.align_labels()
+fig.savefig("../../runs/annual-predictions.pdf")
+fig.savefig("../../runs/annual-predictions.svg")
+
+## Tabulated statistics
+
+seed = np.random.default_rng(150914)
+statfunc = np.nanmedian
+f = io.StringIO()
+with open("../../runs/summary.rst", "w") as f_rst:
+    print(
+        "+-----------+-----------+---------------+---------------+---------------+",
+        file=f_rst,
+    )
+    print(
+        "|           |           | Source class                                  |",
+        file=f_rst,
+    )
+    print(
+        "| Observing |           +---------------+---------------+---------------+",
+        file=f_rst,
+    )
+    print(
+        "| run       | Network   | BNS           | NSBH          | BBH           |",
+        file=f_rst,
+    )
+    print(
+        "+===========+===========+===============+===============+===============+",
+        file=f_rst,
+    )
+    for fieldname, fieldlabel in zip(
+        fieldnames + ["volume", "rate", "merger_rate_density"],
+        fieldlabels
+        + [
+            "Sensitive volume (Gpc$^3$)",
+            "Annual number of detections",
+            "Merger rate density (Gpc$^{-3}$ yr$^{-1}$)",
+        ],
+    ):
+        print("| {:69s} |".format(fieldlabel), file=f_rst)
+        print("<table>", file=f)
+        print("<caption>", fieldlabel, "</caption>", file=f)
+        print("<thead>", file=f)
+        print("<tr>", file=f)
+        print("<th>", "Run", "</th>", file=f)
+        for pop in pops:
+            print("<th>", pop, "</th>", file=f)
+        print("</tr>", file=f)
+        print("</thead>", file=f)
+        print("<tbody>", file=f)
+        for irun, (run, tables1) in enumerate(tables.items()):
+            print("<tr>", file=f)
+            print("<th>", run, "</th>", file=f)
+
+            results = {}
+            for ipop, (pop, table) in enumerate(tables1.items()):
+                rate = table.meta["rate"].to_value(u.Gpc**-3 * u.yr**-1)
+                nsamples = table.meta["nsamples"]
+                fiducial_log_rate = fiducial_log_rates[ipop]
+                fiducial_log_rate_err = fiducial_log_rate_errs[ipop]
+                mu = fiducial_log_rate + np.log(len(table) / rate)
+                sigma = fiducial_log_rate_err
+
+                quantiles = [0.05, 0.5, 0.95]
+                if fieldname == "volume":
+                    lo, mid, hi = (
+                        betabinom_k_n(len(table), nsamples).ppf(quantiles) / rate
+                    )
+                elif fieldname == "rate":
+                    lo, mid, hi = poisson_lognormal_rate_quantiles(quantiles, mu, sigma)
+                    lo = int(np.floor(lo))
+                    mid = int(np.round(mid))
+                    hi = int(np.ceil(hi))
+                elif fieldname == "merger_rate_density":
+                    ((lo, mid, hi),) = rates_table[rates_table["population"] == pop][
+                        "lower", "mid", "upper"
+                    ]
+                else:
+                    data = table[fieldname]
+                    lo, mid, hi = bootstrap.ci(data, statfunc, quantiles, seed=seed)
+
+                mid, lo, hi = format_with_errorbars(mid, lo, hi)
+                mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
+                print("<td>${}$</td>".format(mathtext), file=f)
+
+                results.setdefault("lo", {})[pop] = lo
+                results.setdefault("mid", {})[pop] = mid
+                results.setdefault("hi", {})[pop] = hi
+
+            print("</tr>", file=f)
+            print(
+                "+-----------+-----------+---------------+---------------+---------------+",
+                file=f_rst,
+            )
+            print(
+                "| {:9s} | {:9s} ".format(run, table.meta["network"])
+                + ("| :math:`{:7s}" * 3).format(*results["mid"].values())
+                + "|",
+                file=f_rst,
+            )
+            print(
+                "|           |           "
+                + ("| ^{:13s}" * 3).format(
+                    *("{{+{}}}".format(_) for _ in results["hi"].values())
+                )
+                + "|",
+                file=f_rst,
+            )
+            print(
+                "|           |           "
+                + ("| _{:13s}" * 3).format(
+                    *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                )
+                + "|",
+                file=f_rst,
+            )
+        print("</tbody>", file=f)
+        print("</table>", file=f)
+        print(
+            "+-----------+-----------+---------------+---------------+---------------+",
+            file=f_rst,
+        )
+Markdown(f.getvalue())
+
+seed = np.random.default_rng(150914)
+statfunc = np.nanmedian
+f = io.StringIO()
+with open("../../runs/extremes.rst", "w") as f_rst:
+    print(
+        "+-----------+-----------+---------------+---------------+---------------+",
+        file=f_rst,
+    )
+    print(
+        "|           |           | Source class                                  |",
+        file=f_rst,
+    )
+    print(
+        "| Observing |           +---------------+---------------+---------------+",
+        file=f_rst,
+    )
+    print(
+        "| run       | Network   | BNS           | NSBH          | BBH           |",
+        file=f_rst,
+    )
+    print(
+        "+===========+===========+===============+===============+===============+",
+        file=f_rst,
+    )
+    for fieldlabel, statfunc in [
+        [
+            "Percentage of events with area(90) <= 5 deg2",
+            lambda _: stats.percentileofscore(_["area(90)"], 5),
+        ],
+        [
+            "Percentage of events with area(90) <= 20 deg2",
+            lambda _: stats.percentileofscore(_["area(90)"], 20),
+        ],
+        [
+            "Percentage of events with vol(90) <= 1e3 Mpc3",
+            lambda _: stats.percentileofscore(_["vol(90)"], 1),
+        ],
+        [
+            "Percentage of events with vol(90) <= 1e4 Mpc3",
+            lambda _: stats.percentileofscore(_["vol(90)"], 10),
+        ],
+    ]:
+        print("| {:69s} |".format(fieldlabel), file=f_rst)
+        print("<table>", file=f)
+        print("<caption>", fieldlabel, "</caption>", file=f)
+        print("<thead>", file=f)
+        print("<tr>", file=f)
+        print("<th>", "Run", "</th>", file=f)
+        for pop in pops:
+            print("<th>", pop, "</th>", file=f)
+        print("</tr>", file=f)
+        print("</thead>", file=f)
+        print("<tbody>", file=f)
+        for irun, (run, tables1) in enumerate(tables.items()):
+            print("<tr>", file=f)
+            print("<th>", run, "</th>", file=f)
+            for ipop, (pop, table) in enumerate(tables1.items()):
+                quantiles = [0.05, 0.5, 0.95]
+                lo, mid, hi = bootstrap.ci(table, statfunc, quantiles, seed=seed)
+                mid, lo, hi = format_with_errorbars(mid, lo, hi)
+                mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
+                print("<td>${}$</td>".format(mathtext), file=f)
+
+                results.setdefault("lo", {})[pop] = lo
+                results.setdefault("mid", {})[pop] = mid
+                results.setdefault("hi", {})[pop] = hi
+
+            print("</tr>", file=f)
+            print(
+                "+-----------+-----------+---------------+---------------+---------------+",
+                file=f_rst,
+            )
+            print(
+                "| {:9s} | {:9s} ".format(run, table.meta["network"])
+                + ("| :math:`{:7s}" * 3).format(*results["mid"].values())
+                + "|",
+                file=f_rst,
+            )
+            print(
+                "|           |           "
+                + ("| ^{:13s}" * 3).format(
+                    *("{{+{}}}".format(_) for _ in results["hi"].values())
+                )
+                + "|",
+                file=f_rst,
+            )
+            print(
+                "|           |           "
+                + ("| _{:13s}" * 3).format(
+                    *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                )
+                + "|",
+                file=f_rst,
+            )
+        print("</tbody>", file=f)
+        print("</table>", file=f)
+        print(
+            "+-----------+-----------+---------------+---------------+---------------+",
+            file=f_rst,
+        )
+Markdown(f.getvalue())

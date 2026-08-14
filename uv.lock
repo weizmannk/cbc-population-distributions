@@ -277,6 +277,7 @@ dependencies = [
     { name = "pybtex" },
     { name = "pytest-astropy" },
     { name = "ruff" },
+    { name = "scikits-bootstrap" },
     { name = "seaborn" },
     { name = "sphinx", extra = ["docs"] },
 ]
@@ -315,6 +316,9 @@ test = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "ipykernel" },
+    { name = "nbconvert" },
+    { name = "nbformat" },
     { name = "pre-commit" },
 ]
 
@@ -349,6 +353,7 @@ requires-dist = [
     { name = "pytest-astropy", extras = ["test"], specifier = ">=0.11.0" },
     { name = "python-ligo-lw", marker = "extra == 'docs'" },
     { name = "ruff", specifier = ">=0.13.1" },
+    { name = "scikits-bootstrap", specifier = ">=1.1.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "sphinx", marker = "extra == 'docs'" },
     { name = "sphinx", extras = ["docs"], specifier = ">=8.2.3" },
@@ -363,7 +368,12 @@ requires-dist = [
 provides-extras = ["test", "docs"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pre-commit", specifier = ">=4.3.0" }]
+dev = [
+    { name = "ipykernel", specifier = ">=6.30.1" },
+    { name = "nbconvert", specifier = ">=7.17.0" },
+    { name = "nbformat", specifier = ">=5.10.4" },
+    { name = "pre-commit", specifier = ">=4.3.0" },
+]
 
 [[package]]
 name = "certifi"
@@ -3422,6 +3432,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e4/f1/fb3c8ccd4a8963d7400cfd80100d5ae7fd95d49ace3a6722736bb4c1c1a6/safe-netrc-1.0.1.tar.gz", hash = "sha256:1dcc7263b4d9ce72e0109d8e2bc9ba89c8056ccc618d26c8c94802c6fd753720", size = 10846, upload-time = "2022-11-29T13:24:35.252Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/26/2a/b5b09ff2781c7ea694b337f65f52a00319396578c049af8890ff9b4b8232/safe_netrc-1.0.1-py3-none-any.whl", hash = "sha256:5f0dd6a5e304b1da3be220f15efedbf09e50779fe90462143c228c781b9d8218", size = 10891, upload-time = "2022-11-29T13:24:33.626Z" },
+]
+
+[[package]]
+name = "scikits-bootstrap"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/a1/f1060d5d2d1e74816b39813f640526dcdd194ce59dc8b4c4227fe0832714/scikits_bootstrap-1.1.1.tar.gz", hash = "sha256:6942bddee6ca1818499c3c7d945974fe5f6cf6116a707bd1df4c81c57849c905", size = 19046, upload-time = "2025-08-07T17:31:04.187Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/1d/03726655815cf6b3361c7799deb587841d06677e832aedfed3965a52946c/scikits_bootstrap-1.1.1-py3-none-any.whl", hash = "sha256:8d99832f9369cf02d8b0900bceca5b8bf208a195162995fa4c84e8fe309851b3", size = 14473, upload-time = "2025-08-07T17:31:05.431Z" },
 ]
 
 [[package]]
