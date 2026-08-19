@@ -368,6 +368,54 @@ def extract_hyperparams_map(
     return df
 
 
+def load_hyperparams_median(path: str) -> pd.Series:
+    """Load the posterior median of every hyperparameter from a FullPop
+    result file, dispatching on format like load_hyperparams_map. Matches
+    GWTC-5.0's own convention of reporting posterior medians rather than
+    a single MAP sample (see compute_rate_summary_fullpop's docstring)."""
+    try:
+        from popsummary.popresult import PopulationResult
+
+        popresult = PopulationResult(path)
+        df = pd.DataFrame(
+            popresult.get_hyperparameter_samples(),
+            columns=popresult.get_metadata("hyperparameters"),
+        )
+        return df.median(numeric_only=True)
+    except (KeyError, OSError):
+        hyperparams = read_in_result(path)
+        return hyperparams.posterior.median(numeric_only=True)
+
+
+def extract_hyperparams_median(
+    sources: dict[str, str], cache_csv: str, force: bool = False
+) -> pd.DataFrame:
+    """
+    Return a DataFrame of posterior-median hyperparameters, one row per
+    label in `sources` (label -> file path). Same caching pattern as
+    extract_hyperparams_map: labels already present in `cache_csv` are
+    reused instead of reopening their (possibly multi-GB) source file;
+    pass force=True to recompute everything.
+    """
+    cached = pd.DataFrame()
+    if not force and os.path.exists(cache_csv):
+        cached = pd.read_csv(cache_csv, index_col=0)
+        sources = {
+            label: path for label, path in sources.items() if label not in cached.index
+        }
+
+    if not sources:
+        return cached
+
+    rows = {label: load_hyperparams_median(path) for label, path in sources.items()}
+    new_df = pd.DataFrame(rows).T
+    df = pd.concat([cached, new_df]) if not cached.empty else new_df
+    df.index.name = "label"
+    os.makedirs(os.path.dirname(cache_csv) or ".", exist_ok=True)
+    df.to_csv(cache_csv)
+    return df
+
+
 #: The three small joint-mass rate grids present in both catalogues'
 #: popsummary files (600x600 each). Excludes
 #: primary_mass_secondary_mass_joint_full_posterior, which only GWTC-5.0
@@ -752,6 +800,12 @@ def main(force: bool = False) -> None:
         SOURCES, cache_csv=str(hyperparams_csv), force=force
     )
     print(f"Hyperparameters MAP cache: {hyperparams_csv}")
+
+    hyperparams_median_csv = DERIVED_DIR / "hyperparams_median.csv"
+    extract_hyperparams_median(
+        SOURCES, cache_csv=str(hyperparams_median_csv), force=force
+    )
+    print(f"Hyperparameters median cache: {hyperparams_median_csv}")
 
     rate_summary_csv = DERIVED_DIR / "rate_summary.csv"
     extract_rate_summary(RATE_SOURCES, cache_csv=str(rate_summary_csv), force=force)

@@ -40,6 +40,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.patheffects import withStroke
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.integrate import simpson
+from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import gaussian_kde
 
 # ============================================================================
@@ -84,16 +85,59 @@ plt.rcParams.update(
 _SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = _SCRIPT_DIR.parent.parent / "data" / "raw"
 
+#: Sibling of DATA_DIR (data/raw), where scripts/hyperparams/get_hyperparams.py
+#: writes its small, fast-to-load caches.
+DERIVED_DIR = _SCRIPT_DIR.parent.parent / "data" / "derived"
+
 #: Small MAP-hyperparameter cache built by scripts/hyperparams/get_hyperparams.py
 #: from the (multi-GB) GWTC-4.0/GWTC-5.0 raw source files. Read this instead of
 #: the raw files -- run get_hyperparams.py first if it doesn't exist yet.
-HYPERPARAMS_CSV = _SCRIPT_DIR.parent.parent / "data" / "derived" / "hyperparams_map.csv"
+HYPERPARAMS_CSV = DERIVED_DIR / "hyperparams_map.csv"
 HYPERPARAMS_LABEL_GWTC4 = "GWTC-4.0 (popsummary)"
 HYPERPARAMS_LABEL_GWTC5 = "GWTC-5.0 (popsummary)"
 
-#: HDF5 file (astropy Table) with posterior-predictive mass samples
-#: (columns ``mass1``, ``mass2``) drawn from the GWTC-5.0 FullPop population.
-CBC_MASS_DISTRIBUTION_FILE = str(DATA_DIR / "fullpop_gwtc5.h5")
+#: Posterior-median hyperparameter cache, same script, same label
+#: convention as HYPERPARAMS_CSV but medians instead of MAP samples --
+#: matches GWTC-5.0's own convention of reporting posterior medians.
+HYPERPARAMS_MEDIAN_CSV = DERIVED_DIR / "hyperparams_median.csv"
+
+#: Pre-extracted joint mass-rate grids (median, ppd, uncertainty) for
+#: GWTC-5.0, built by get_hyperparams.py's extract_joint_grids. Used
+#: when FULLPOP5_CURVE == "grid" instead of re-reading the multi-GB raw
+#: popsummary file.
+GWTC5_GRIDS_NPZ = DERIVED_DIR / "GWTC-5_0__popsummary__grids.npz"
+
+#: HDF5 file (astropy Table) with posterior-predictive mass/spin samples
+#: for GWTC-5.0 FullPop, evaluated at the MAP hyperparameter sample
+#: (analytic reimplementation). Spins here are the physically correct
+#: ones (isotropic, magnitude and tilt independently drawn). Used for
+#: Figures 1-4 when FULLPOP5_CURVE == "map".
+CBC_MASS_DISTRIBUTION_FILE = str(DATA_DIR / "fullpop_MAP.h5")
+
+#: HDF5 file with posterior-predictive samples drawn by direct sampling
+#: of the joint mass-rate grid (ez_emcee, no analytic reimplementation --
+#: matches what the GWTC-5.0-era observing_scenarios repo actually runs).
+#: Used for Figures 1-4 when FULLPOP5_CURVE == "grid", including Figure
+#: 4's spin1z/spin2z -- KNOWN ISSUE: the upstream generation script
+#: (population.py, inherited from the older bgp.py) draws both tilt
+#: cosines from Uniform(0, 1) instead of Uniform(-1, 1) and only ever
+#: uses one of the two sampled cosines for both spins, so every sample
+#: in this file has spin1z, spin2z >= 0 (verified: 0 negative values out
+#: of ~1.5M rows) -- not isotropic, and not what GWTC-5.0's own results
+#: paper reports (54-57% of BHs with cos(tilt) > 0, not 100%). Reported
+#: upstream; main() logs a warning when this file's spins are used.
+#: Deliberately used anyway (not falling back to MAP) so that replacing
+#: this file with a corrected regeneration (same path) fixes Figure 4
+#: with no code change.
+CBC_MASS_DISTRIBUTION_FILE_GRID = str(DATA_DIR / "fullpop_grid.h5")
+
+#: How to compute the GWTC-5 FullPop curves/samples in all four figures:
+#: "grid" uses the posterior-median joint rate grid (direct sampling,
+#: matches the GWTC-5.0-era observing_scenarios repo); "map" reproduces
+#: the old analytic fullpop() evaluation at the MAP hyperparameter
+#: sample. See CBC_MASS_DISTRIBUTION_FILE_GRID above for the known spin
+#: caveat this implies for Figure 4 under "grid".
+FULLPOP5_CURVE: str = "grid"  # "grid" or "map"
 
 #: All paper figures land here (PNG + PDF) -- one output subfolder per
 #: source script/notebook, so a figure's origin is visible from its path
@@ -187,6 +231,46 @@ def load_hyperparams_map(label: str) -> pd.Series:
     this never touches the multi-GB raw source files directly."""
     df = pd.read_csv(HYPERPARAMS_CSV, index_col=0)
     return df.loc[label]
+
+
+def load_hyperparams_median(label: str) -> pd.Series:
+    """Return the cached posterior-median hyperparameter row for *label*
+    from HYPERPARAMS_MEDIAN_CSV. Same cache script as load_hyperparams_map,
+    medians instead of the MAP sample."""
+    df = pd.read_csv(HYPERPARAMS_MEDIAN_CSV, index_col=0)
+    return df.loc[label]
+
+
+def load_gwtc5_grid_joint_median() -> tuple[np.ndarray, np.ndarray]:
+    """Load the cached posterior-median joint m1-m2 rate grid for GWTC-5.0
+    FullPop (built by get_hyperparams.py's extract_joint_grids), with the
+    m1>=m2 and not(m1>60, m2<3) exclusion applied -- pairing is already
+    baked into this grid, unlike the analytic fullpop() + mass_pairing()
+    reconstruction used in "map" mode.
+
+    Axis convention, verified empirically (not documented in the source
+    file): axis 0 of the raw rates array is m2 (the smaller mass), axis 1
+    is m1 (the larger mass) -- backwards from the naive "axis0=primary"
+    guess. Checked by masking each way and counting nonzero cells: with
+    axis0=m2/axis1=m1, ~100% of the rate mass satisfies axis0 <= axis1
+    (physically m2 <= m1); the opposite assignment puts ~95% of the mass
+    in the unphysical m2>m1 region.
+
+    Returns
+    -------
+    grid_mass : np.ndarray
+        Shared mass grid [M_sun] for both axes (600 points).
+    rates : np.ndarray
+        Masked rate density, shape (600, 600), axis0=m2, axis1=m1.
+    """
+    grids = np.load(GWTC5_GRIDS_NPZ)
+    name = "primary_mass_secondary_mass_joint_median"
+    grid_mass = grids[f"{name}__m1"]  # __m1 and __m2 are the same array
+    rates = grids[f"{name}__rates"]  # axis0=m2, axis1=m1
+
+    axis0_m2, axis1_m1 = np.meshgrid(grid_mass, grid_mass, indexing="ij")
+    rates = rates * ((axis1_m1 >= axis0_m2) & ~((axis1_m1 > 60) & (axis0_m2 < 3)))
+    return grid_mass, rates
 
 
 # ============================================================================
@@ -634,6 +718,7 @@ def plot_1d_model_comparison(
     model_pdb: np.ndarray,
     boundary_masses: list[float],
     boundary_labels: list[str],
+    fullpop5_label: str = "GWTC-5: FullPop",
 ) -> plt.Figure:
     """Plot FullPop-4.0 vs. FullPop (GWTC-5.0) vs. Power-Law+Dip+Break.
 
@@ -693,7 +778,7 @@ def plot_1d_model_comparison(
         color="#1B4F91",
         linewidth=2.5,
         linestyle="-",
-        label="GWTC-5: FullPop",
+        label=fullpop5_label,
     )
 
     ax.set_xlim(MASS_MIN, MASS_MAX)
@@ -737,6 +822,7 @@ def plot_1d_marginals(
     m2_samples: np.ndarray,
     p_m1_marginal: np.ndarray,
     p_m2_marginal: np.ndarray,
+    samples_label: str = "GWTC-5.0: FullPop samples",
 ) -> plt.Figure:
     """Compare GWTC-5.0 FullPop marginals against posterior-predictive samples.
 
@@ -798,7 +884,7 @@ def plot_1d_marginals(
             edgecolor="white",
             linewidth=1.2,
             ax=ax,
-            label="GWTC-5.0: FullPop samples",
+            label=samples_label,
         )
         ax.plot(
             m,
@@ -1190,47 +1276,91 @@ def main() -> None:
         ", ".join(list(hyperparams5.keys())[:5]),
     )
 
+    logger.info("FULLPOP5_CURVE = %r", FULLPOP5_CURVE)
+
     # ------------------------------------------------------------------
     # 2.  Figure 1 - 1D model comparison
     # ------------------------------------------------------------------
     logger.info("Computing 1D mass distributions (N = %d points) ...", N_MASS_1D)
     m_1d = np.geomspace(MASS_MIN, MASS_MAX, N_MASS_1D)
 
-    # Boundary markers taken from GWTC-5.0 (the current-generation model).
-    # Label correspondence: M_min = NSmin, gamma_low,1 = NSmax,
-    # gamma_high,1 = BHmin, gamma_low,2 = UPPERmin, gamma_high,2 = UPPERmax.
+    # Boundary markers: posterior median under "grid" (matches the grid
+    # curve below), MAP sample under "map". Labels harmonised with the
+    # equations: only the upper (pair-instability) gap uses
+    # gamma_low,2 / gamma_high,2; the lower (NS-BH) gap bounds are
+    # m_max,NS and m_min,BH, not gamma_low,1 / gamma_high,1.
+    if FULLPOP5_CURVE == "grid":
+        hyperparams5_boundary = load_hyperparams_median(HYPERPARAMS_LABEL_GWTC5)
+    else:
+        hyperparams5_boundary = hyperparams5
     boundary_masses = [
-        hyperparams5["NSmin"],
-        hyperparams5["NSmax"],
-        hyperparams5["BHmin"],
-        hyperparams5["UPPERmin"],
-        hyperparams5["UPPERmax"],
+        hyperparams5_boundary["NSmin"],
+        hyperparams5_boundary["NSmax"],
+        hyperparams5_boundary["BHmin"],
+        hyperparams5_boundary["UPPERmin"],
+        hyperparams5_boundary["UPPERmax"],
     ]
     boundary_labels = [
-        r"$M_{\min}$",
-        r"$\gamma_{\mathrm{low,1}}$",
-        r"$\gamma_{\mathrm{high,1}}$",
+        r"$m_{\mathrm{min,NS}}$",
+        r"$m_{\mathrm{max,NS}}$",
+        r"$m_{\mathrm{min,BH}}$",
         r"$\gamma_{\mathrm{low,2}}$",
         r"$\gamma_{\mathrm{high,2}}$",
     ]
 
+    # GWTC-5 FullPop curve: grid/median or MAP, per FULLPOP5_CURVE. GWTC-4
+    # has no grid available in this data release, so it stays analytic
+    # (fullpop(m_1d, hyperparams)) regardless of the flag.
+    if FULLPOP5_CURVE == "grid":
+        _grid_mass, _grid_rates_2d = load_gwtc5_grid_joint_median()
+        _p_m1_native = np.trapezoid(_grid_rates_2d, _grid_mass, axis=0)  # over m2
+        model_fullpop5 = np.interp(m_1d, _grid_mass, _p_m1_native)
+        fullpop5_label = "GWTC-5: FullPop (grid)"
+    elif FULLPOP5_CURVE == "map":
+        model_fullpop5 = fullpop(m_1d, hyperparams5)
+        fullpop5_label = "GWTC-5: FullPop (MAP)"
+    else:
+        raise ValueError(f"Unknown FULLPOP5_CURVE: {FULLPOP5_CURVE!r}")
+
     fig1 = plot_1d_model_comparison(
         m_1d,
         fullpop(m_1d, hyperparams),
-        fullpop(m_1d, hyperparams5),
+        model_fullpop5,
         power_law_dip_break(m_1d),
         boundary_masses,
         boundary_labels,
+        fullpop5_label=fullpop5_label,
     )
     save_figure(fig1, OUT_1D_MODELS)
     plt.close(fig1)
     gc.collect()
 
     # ------------------------------------------------------------------
-    # 3.  Load posterior-predictive samples
+    # 3.  Load posterior-predictive samples for Figures 2-3-4 (this same
+    #     table is reused for Figure 4's spin KDE below). Follows
+    #     FULLPOP5_CURVE like the rest of this script -- see
+    #     CBC_MASS_DISTRIBUTION_FILE_GRID's docstring for why its
+    #     spin1z/spin2z columns are not physically valid (always
+    #     non-negative) until the upstream generation bug is fixed and
+    #     that file is regenerated. Once fullpop_grid.h5 is replaced with
+    #     a corrected file (same path), Figure 4 picks up the fix with no
+    #     code change.
     # ------------------------------------------------------------------
-    logger.info("Loading CBC samples from: %s", CBC_MASS_DISTRIBUTION_FILE)
-    table = Table.read(CBC_MASS_DISTRIBUTION_FILE)
+    _cbc_file = (
+        CBC_MASS_DISTRIBUTION_FILE_GRID
+        if FULLPOP5_CURVE == "grid"
+        else CBC_MASS_DISTRIBUTION_FILE
+    )
+    logger.info("Loading CBC mass samples from: %s", _cbc_file)
+    if FULLPOP5_CURVE == "grid":
+        logger.warning(
+            "FULLPOP5_CURVE='grid': Figure 4's spin1z/spin2z will be the "
+            "known-invalid ones from fullpop_grid.h5 (always non-negative, "
+            "not isotropic -- see CBC_MASS_DISTRIBUTION_FILE_GRID's "
+            "docstring) until that file is regenerated with the upstream "
+            "cos1/cos2 bug fixed."
+        )
+    table = Table.read(_cbc_file)
     m1_samples = np.asarray(table["mass1"])
     m2_samples = np.asarray(table["mass2"])
     logger.info(
@@ -1247,28 +1377,65 @@ def main() -> None:
     # ------------------------------------------------------------------
     logger.info("Building 2D mass grid (%d × %d) ...", N_MASS_2D, N_MASS_2D)
     m_2d = np.geomspace(MASS_MIN, MASS_MAX, N_MASS_2D)
-
-    model_2d = fullpop(m_2d, hyperparams5)
-    pdf_1d = model_2d / simpson(model_2d, m_2d)  # integral of p dm = 1
-
     m1_grid, m2_grid = np.meshgrid(m_2d, m_2d)
+    _exclude = (m1_grid >= m2_grid) & ~((m1_grid > 60) & (m2_grid < 3))
 
-    beta_pair_1 = hyperparams5["beta_pair_1"]
-    beta_pair_2 = hyperparams5["beta_pair_2"]
-    mbreak = hyperparams5["mbreak"]
+    if FULLPOP5_CURVE == "grid":
+        # Reuse the same cached grid as Figure 1 above -- pairing is
+        # already baked in, unlike the MAP branch below which
+        # reconstructs it by hand from beta_pair_1/2 and mbreak.
+        _grid_mass, _grid_rates_2d = load_gwtc5_grid_joint_median()
 
-    # Joint PDF with mass-ratio-dependent pairing
-    q = m2_grid / m1_grid  # mass ratio, q ∈ (0, 1] since m2 <= m1
-    p_m1m2 = np.outer(pdf_1d, pdf_1d) * (
-        (m2_grid < mbreak) * q**beta_pair_1 + (m2_grid >= mbreak) * q**beta_pair_2
-    )
-    # Enforce m1 >= m2 and exclude the extreme mass-ratio region GWTC-5.0's
-    # own inference excludes (m1>60, m2<3 -- no simulated injections there).
-    p_m1m2 *= (m1_grid >= m2_grid) & ~((m1_grid > 60) & (m2_grid < 3))
+        # _grid_mass is log-spaced (fine steps at low mass, coarse at
+        # high mass), so a plain .sum() over the axis implicitly
+        # under-weights the high-mass tail relative to the low-mass end;
+        # trapezoid weights by the actual local spacing, matching the
+        # true integral p(m) dm. Integrate over axis0 (m2) to get the m1
+        # marginal, and vice versa.
+        _p_m1_native = np.trapezoid(_grid_rates_2d, _grid_mass, axis=0)
+        _p_m2_native = np.trapezoid(_grid_rates_2d, _grid_mass, axis=1)
+        p_m1_marginal = np.interp(m_2d, _grid_mass, _p_m1_native)
+        p_m2_marginal = np.interp(m_2d, _grid_mass, _p_m2_native)
 
-    # Marginalize to get 1D distribution
-    p_m1_marginal = np.trapezoid(p_m1m2, m_2d, axis=0)  # Integrate over m2
-    p_m2_marginal = np.trapezoid(p_m1m2, m_2d, axis=1)  # Integrate over m1
+        # p_m1m2 on the (m_2d, m_2d) mesh, for Figure 3's heatmap.
+        # 2D-interpolated from the native 600x600 grid; query points
+        # passed as (m2, m1) to match the (axis0, axis1) = (m2, m1)
+        # convention documented in load_gwtc5_grid_joint_median(). Mask
+        # re-applied since interpolation can leak small values across
+        # the m1=m2 diagonal / the m1>60,m2<3 corner.
+        _interp_joint = RegularGridInterpolator(
+            (_grid_mass, _grid_mass),
+            _grid_rates_2d,
+            bounds_error=False,
+            fill_value=0.0,
+        )
+        p_m1m2 = _interp_joint(np.stack([m2_grid, m1_grid], axis=-1))
+        p_m1m2 *= _exclude
+        samples_label = "GWTC-5.0: FullPop samples (grid)"
+    elif FULLPOP5_CURVE == "map":
+        model_2d = fullpop(m_2d, hyperparams5)
+        pdf_1d = model_2d / simpson(model_2d, m_2d)  # integral of p dm = 1
+
+        beta_pair_1 = hyperparams5["beta_pair_1"]
+        beta_pair_2 = hyperparams5["beta_pair_2"]
+        mbreak = hyperparams5["mbreak"]
+
+        # Joint PDF with mass-ratio-dependent pairing
+        q = m2_grid / m1_grid  # mass ratio, q ∈ (0, 1] since m2 <= m1
+        p_m1m2 = np.outer(pdf_1d, pdf_1d) * (
+            (m2_grid < mbreak) * q**beta_pair_1 + (m2_grid >= mbreak) * q**beta_pair_2
+        )
+        # Enforce m1 >= m2 and exclude the extreme mass-ratio region
+        # GWTC-5.0's own inference excludes (m1>60, m2<3 -- no simulated
+        # injections there).
+        p_m1m2 *= _exclude
+
+        # Marginalize to get 1D distribution
+        p_m1_marginal = np.trapezoid(p_m1m2, m_2d, axis=0)  # Integrate over m2
+        p_m2_marginal = np.trapezoid(p_m1m2, m_2d, axis=1)  # Integrate over m1
+        samples_label = "GWTC-5.0: FullPop samples (MAP)"
+    else:
+        raise ValueError(f"Unknown FULLPOP5_CURVE: {FULLPOP5_CURVE!r}")
 
     # ------------------------------------------------------------------
     # 5.  Figure 2 - 1D marginals vs. samples
@@ -1279,6 +1446,7 @@ def main() -> None:
         m2_samples,
         p_m1_marginal,
         p_m2_marginal,
+        samples_label=samples_label,
     )
     save_figure(fig2, OUT_1D_MARGINALS)
     plt.close(fig2)
@@ -1294,7 +1462,9 @@ def main() -> None:
     gc.collect()
 
     # ------------------------------------------------------------------
-    # 7.  Figure 4 - Mass and spin KDE-density scatter (GWTC-5.0)
+    # 7.  Figure 4 - Mass and spin KDE-density scatter (GWTC-5.0).
+    #     Reuses `table` from step 3 (same file, same FULLPOP5_CURVE) --
+    #     see the warning logged there when FULLPOP5_CURVE == "grid".
     # ------------------------------------------------------------------
     fig4 = plot_mass_spin_kde(table, n_fit_samples=N_MASS_SPIN_SAMPLES, seed=150914)
     save_figure(fig4, OUT_MASS_SPIN_KDE)

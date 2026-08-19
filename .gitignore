@@ -219,15 +219,10 @@ output/
 
 # file
 .baseline5_widesigmachi2_mass_NotchFilterBinnedPairingMassDistribution_redshift_powerlaw_mag_iid_spin_magnitude_gaussian_tilt_iid_spin_orientation_result.hdf5
-data/injections/*.hdf
-data/injections/*.hdf5
-data/**/*.pkl
 
 # data/raw/ and data/derived/ are fully regenerable via
 # scripts/hyperparams/get_hyperparams.py (downloads from Zenodo/LIGO DCC on
 # demand -- see PLAN_REORG.md and that script's docstrings). Never commit
 # either: data/raw/ holds multi-GB source files, data/derived/ is a cache
 # that could otherwise silently go stale relative to data/raw/.
-data/raw/
-data/derived/
 runs/

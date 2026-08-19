@@ -225,7 +225,7 @@ def add_mass_fraction_and_lognormal(rates_table, cbc_h5_path):
 
 
 add_mass_fraction_and_lognormal(
-    rates_table_fullpop, DATA_DIR / "raw" / "fullpop_gwtc5.h5"
+    rates_table_fullpop, DATA_DIR / "raw" / "fullpop_grid.h5"
 )
 add_mass_fraction_and_lognormal(rates_table_pixelpop, DATA_DIR / "raw" / "pixelpop.h5")
 
