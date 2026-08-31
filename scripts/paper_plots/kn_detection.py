@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 ---------------------------------------------------------------------------------------------------
                                     ABOUT
@@ -13,7 +12,6 @@ import os
 from pathlib import Path
 
 import matplotlib
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
@@ -21,6 +19,7 @@ from astropy.coordinates import Distance
 from astropy.cosmology import Planck15 as cosmo
 from astropy.cosmology import z_at_value
 from astropy.table import Table
+from matplotlib import gridspec
 
 # ---------------------------------------------------------------------------
 # Plotting defaults

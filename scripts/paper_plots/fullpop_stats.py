@@ -734,7 +734,7 @@ with open("../../runs/summary.rst", "w") as f_rst:
             "Merger rate density (Gpc$^{-3}$ yr$^{-1}$)",
         ],
     ):
-        print("| {:69s} |".format(fieldlabel), file=f_rst)
+        print(f"| {fieldlabel:69s} |", file=f_rst)
         print("<table>", file=f)
         print("<caption>", fieldlabel, "</caption>", file=f)
         print("<thead>", file=f)
@@ -777,8 +777,8 @@ with open("../../runs/summary.rst", "w") as f_rst:
                     lo, mid, hi = bootstrap.ci(data, statfunc, quantiles, seed=seed)
 
                 mid, lo, hi = format_with_errorbars(mid, lo, hi)
-                mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
-                print("<td>${}$</td>".format(mathtext), file=f)
+                mathtext = f"{mid}^{{+{hi}}}_{{-{lo}}}"
+                print(f"<td>${mathtext}$</td>", file=f)
 
                 results.setdefault("lo", {})[pop] = lo
                 results.setdefault("mid", {})[pop] = mid
@@ -798,7 +798,7 @@ with open("../../runs/summary.rst", "w") as f_rst:
             print(
                 "|           |           "
                 + ("| ^{:13s}" * 3).format(
-                    *("{{+{}}}".format(_) for _ in results["hi"].values())
+                    *(f"{{+{_}}}" for _ in results["hi"].values())
                 )
                 + "|",
                 file=f_rst,
@@ -806,7 +806,7 @@ with open("../../runs/summary.rst", "w") as f_rst:
             print(
                 "|           |           "
                 + ("| _{:13s}" * 3).format(
-                    *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                    *(f"{{-{_}}}`" for _ in results["lo"].values())
                 )
                 + "|",
                 file=f_rst,
@@ -861,7 +861,7 @@ with open("../../runs/extremes.rst", "w") as f_rst:
             lambda _: stats.percentileofscore(_["vol(90)"], 10),
         ],
     ]:
-        print("| {:69s} |".format(fieldlabel), file=f_rst)
+        print(f"| {fieldlabel:69s} |", file=f_rst)
         print("<table>", file=f)
         print("<caption>", fieldlabel, "</caption>", file=f)
         print("<thead>", file=f)
@@ -879,8 +879,8 @@ with open("../../runs/extremes.rst", "w") as f_rst:
                 quantiles = [0.05, 0.5, 0.95]
                 lo, mid, hi = bootstrap.ci(table, statfunc, quantiles, seed=seed)
                 mid, lo, hi = format_with_errorbars(mid, lo, hi)
-                mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
-                print("<td>${}$</td>".format(mathtext), file=f)
+                mathtext = f"{mid}^{{+{hi}}}_{{-{lo}}}"
+                print(f"<td>${mathtext}$</td>", file=f)
 
                 results.setdefault("lo", {})[pop] = lo
                 results.setdefault("mid", {})[pop] = mid
@@ -900,7 +900,7 @@ with open("../../runs/extremes.rst", "w") as f_rst:
             print(
                 "|           |           "
                 + ("| ^{:13s}" * 3).format(
-                    *("{{+{}}}".format(_) for _ in results["hi"].values())
+                    *(f"{{+{_}}}" for _ in results["hi"].values())
                 )
                 + "|",
                 file=f_rst,
@@ -908,7 +908,7 @@ with open("../../runs/extremes.rst", "w") as f_rst:
             print(
                 "|           |           "
                 + ("| _{:13s}" * 3).format(
-                    *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                    *(f"{{-{_}}}`" for _ in results["lo"].values())
                 )
                 + "|",
                 file=f_rst,
