@@ -3,6 +3,7 @@
 
 import urllib.request
 import warnings
+from pathlib import Path
 
 import numpy as np
 import requests.exceptions
@@ -17,6 +18,14 @@ from ligo.skymap.util import progress_map
 from lxml.etree import parse as parse_xml
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
+
+#: Anchor on this file's own location, not the caller's cwd. Same
+#: convention as the paper_plots/ scripts.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parent
+DATA_DIR = _REPO_ROOT / "data"
+ARCHIVE_DIR = DATA_DIR / "archive"
+ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
 include_snr = True
 client = Client(fail_if_noauth=include_snr, force_noauth=not include_snr)
@@ -149,4 +158,6 @@ if __name__ == "__main__":
     # Put rows in a nicer order
     table.sort("superevent_id")
 
-    table.write("public-alerts.dat", format="ascii.tab", overwrite=True)
+    table.write(
+        str(ARCHIVE_DIR / "public-alerts.dat"), format="ascii.tab", overwrite=True
+    )

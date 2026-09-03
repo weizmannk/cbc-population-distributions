@@ -582,7 +582,7 @@ RATE_SOURCES = {
 #: (https://arxiv.org/abs/2605.27226), Table 2, FullPop and PixelPop
 #: rows. Static citations, not derived from any local file, kept here so
 #: they exist in exactly one place instead of being copy-pasted into every
-#: script that needs them (fullpop_stats.py, detection_rate.ipynb, ...).
+#: script that needs them (population_stats.py, detection_rate.ipynb, ...).
 PUBLISHED_RATES_TABLE2 = [
     {
         "catalog": "GWTC-5.0 FullPop",
@@ -802,7 +802,7 @@ def main(force: bool = False) -> None:
     print(f"Hyperparameters MAP cache: {hyperparams_csv}")
 
     hyperparams_median_csv = DERIVED_DIR / "hyperparams_median.csv"
-    extract_hyperparams_median(
+    hyperparams_median = extract_hyperparams_median(
         SOURCES, cache_csv=str(hyperparams_median_csv), force=force
     )
     print(f"Hyperparameters median cache: {hyperparams_median_csv}")
@@ -844,12 +844,29 @@ def main(force: bool = False) -> None:
         f.write(to_latex(df, caption=title))
 
     # Paper-style (booktabs, sectioned) table, built straight from the MAP
-    # row rather than the simplified `df` above.
+    # row rather than the simplified `df` above. Caption says "MAP"
+    # explicitly -- it used not to, which is exactly what caused this to
+    # be mistaken for the posterior-median table down the line.
     with open(SCRIPT_DIR / "hyperparams_table_gwtc5.tex", "w") as f:
         f.write(
             to_latex_paper(
                 maxp_samp,
-                caption="Hyperparameters of the FullPop Distribution Model (GWTC-5.0)",
+                caption="Hyperparameters of the FullPop Distribution Model (GWTC-5.0), MAP.",
+            )
+        )
+
+    # Same table, posterior median instead of MAP -- GWTC-5.0's own
+    # convention (see load_hyperparams_median's docstring). Kept as a
+    # separate file/caption rather than replacing the MAP one above: both
+    # are legitimate summaries of the same posterior, and collapsing them
+    # into one file under one name is what caused the confusion this is
+    # fixing.
+    median_samp = hyperparams_median.loc["GWTC-5.0 (popsummary)"]
+    with open(SCRIPT_DIR / "hyperparams_table_gwtc5_median.tex", "w") as f:
+        f.write(
+            to_latex_paper(
+                median_samp,
+                caption="Hyperparameters of the FullPop Distribution Model (GWTC-5.0), posterior median.",
             )
         )
 

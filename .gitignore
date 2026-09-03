@@ -225,4 +225,12 @@ output/
 # demand -- see PLAN_REORG.md and that script's docstrings). Never commit
 # either: data/raw/ holds multi-GB source files, data/derived/ is a cache
 # that could otherwise silently go stale relative to data/raw/.
+#
+# NOTE: this comment used to describe that policy without an actual rule
+# enforcing it -- data/raw/fullpop_grid.h5 got committed as a result. The
+# two lines below are the fix; data/raw/fullpop_grid.h5 itself is already
+# tracked and needs `git rm --cached` to actually stop being committed,
+# which this file alone can't do.
+data/raw/
+data/derived/
 runs/

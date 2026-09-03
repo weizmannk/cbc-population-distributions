@@ -6,7 +6,11 @@
 @description    : Module for estimating the number of gravitational-wave compact binary
                   coalescence (CBC) events whose kilonova (KN) counterpart is detectable
                   by optical telescopes, given a GW170817-like luminosity.
-                  Covers IR1 and O5 observing runs.
+                  Covers IR1 (HL, HLV). O5 is not wired up yet.
+
+                  Import run_analysis/plot_results from a notebook (they take no
+                  module-level state), or run this file directly to reproduce the
+                  three-telescope comparison at the bottom.
 """
 
 import os
@@ -21,6 +25,16 @@ from astropy.coordinates import Distance
 from astropy.cosmology import Planck15 as cosmo
 from astropy.cosmology import z_at_value
 from astropy.table import Table
+
+#: Anchor on this file's own location, not the caller's cwd. This is what
+#: lets the same defaults work whether the module is run directly
+#: (`python kn_detection.py`, cwd = paper_plots/) or imported from a
+#: notebook elsewhere in the tree (cwd = notebooks/, or Colab's repo root).
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parent.parent
+DATA_DIR = _REPO_ROOT / "data"
+RUNS_DIR = DATA_DIR / "runs"
+OUTPUT_DIR = _SCRIPT_DIR.parent / "outputs" / "kn_detection"
 
 # ---------------------------------------------------------------------------
 # Plotting defaults
@@ -71,16 +85,16 @@ def populations_bool(table, pop, ns_max_mass=3.0):
         return (source_mass1 >= ns_max_mass) & (source_mass2 >= ns_max_mass)
 
 
-def ztf_distance_limit(Mabs=-16, mlim=22):
+def telescope_distance_limit(Mabs=-16, mlim=22):
     """
-    Compute the maximum luminosity distance at which ZTF can detect a KN.
+    Compute the maximum luminosity distance at which a telescope can detect a KN.
 
     Parameters
     ----------
     Mabs : float
         Absolute magnitude of the KN (default: -16, GW170817-like).
     mlim : float
-        ZTF limiting magnitude (default: 22, clear sky / 300 s exposures).
+        Telescope limiting magnitude (default: 22, ZTF clear sky / 300 s exposures).
 
     Returns
     -------
@@ -104,7 +118,7 @@ def run_realizations(allsky_df, N_events, d_max_mpc, n_realizations=100_000, see
     N_events : int
         Expected number of detections for this run.
     d_max_mpc : float
-        ZTF detection horizon in Mpc.
+        Telescope detection horizon in Mpc.
     n_realizations : int
         Number of Monte-Carlo draws (default: 100 000).
     seed : int
@@ -129,8 +143,9 @@ def run_realizations(allsky_df, N_events, d_max_mpc, n_realizations=100_000, see
 
 
 def run_analysis(
-    datapath="../data/runs",
-    run_names=("HL", "HLV"),
+    datapath=RUNS_DIR,
+    run_names=("IR1HL", "IR1HLV"),
+    model="fullpop",
     Number_BNS=None,
     Number_NSBH=None,
     ns_max_mass=3.0,
@@ -146,21 +161,28 @@ def run_analysis(
 
     Parameters
     ----------
-    datapath : str
-        Root path to the simulation data (contains ``<run>`` folders).
+    datapath : str or Path
+        Root path to the simulation data, i.e. ``data/runs/`` (contains one
+        folder per run, e.g. ``IR1HL/``, each with a ``fullpop/``/``pixelpop/``
+        subfolder).
     run_names : list of str
-        List of detector network labels, e.g. ``['HL', 'HLV']``.
+        Run folder names under ``datapath``, e.g. ``['IR1HL', 'IR1HLV']``.
+    model : str
+        Population model subfolder to read from each run, ``'fullpop'`` or
+        ``'pixelpop'`` (default: ``'fullpop'``).
     Number_BNS : dict
-        Expected number of detected BNS events per run,
-        e.g. ``{'HL': 4, 'HLV': 6}``.
+        Expected number of detected BNS events per run, keyed by run name,
+        e.g. ``{'IR1HL': 0, 'IR1HLV': 1}``. Defaults to the verified FullPop
+        rate_mid values in scripts/outputs/detection_rates_results.csv
+        (built by scripts/notebooks/detection_rate.ipynb) if not given.
     Number_NSBH : dict
-        Expected number of detected NSBH events per run.
+        Expected number of detected NSBH events per run, same convention.
     ns_max_mass : float
         Maximum NS mass in solar masses (default: 3.0).
     Mabs : float
         KN absolute magnitude (default: -16).
     mlim : float
-        ZTF limiting magnitude (default: 22).
+        Telescope limiting magnitude (default: 22, ZTF).
     n_realizations : int
         Monte-Carlo realizations (default: 100 000).
     seed : int
@@ -176,13 +198,18 @@ def run_analysis(
         Nested dictionary keyed by run name, then ``'BNS'`` / ``'NSBH'``,
         containing the list of realization counts and summary statistics.
     """
-    # Default event counts (Kiendrebeogo et al. 2026)
+    # Defaults are the FullPop rate_mid detection counts over IR1's 6-month
+    # forecast duration (data/runs/IR1HL, IR1HLV; see
+    # scripts/outputs/detection_rates_results.csv). Not the paper's actual
+    # rates if `model="pixelpop"` is requested -- pass Number_BNS/NSBH
+    # explicitly in that case, the PixelPop counts differ (IR1HL: 0, 0;
+    # IR1HLV: 0, 1).
     if Number_BNS is None:
-        Number_BNS = {"HL": 1, "HLV": 2}
+        Number_BNS = {"IR1HL": 0, "IR1HLV": 1}
     if Number_NSBH is None:
-        Number_NSBH = {"HL": 2, "HLV": 2}
+        Number_NSBH = {"IR1HL": 0, "IR1HLV": 1}
 
-    d_max = ztf_distance_limit(Mabs=Mabs, mlim=mlim)
+    d_max = telescope_distance_limit(Mabs=Mabs, mlim=mlim)
 
     if verbose:
         print(f"{telescope_name} KN detection horizon : {d_max:.1f} Mpc")
@@ -191,7 +218,7 @@ def run_analysis(
     results = {}
 
     for run_name in run_names:
-        path = Path(datapath) / run_name
+        path = Path(datapath) / run_name / model
         allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
         injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
 
@@ -240,6 +267,13 @@ def _print_summary(run_name, run_results):
     print()
 
 
+def _network_label(run_name):
+    """Display label for a run folder name: 'IR1HL' -> 'HL'. Falls back to
+    the run name unchanged if it doesn't start with 'IR1', so this stays
+    generic for any future campaign passed via run_names."""
+    return run_name[3:] if run_name.startswith("IR1") else run_name
+
+
 # ---------------------------------------------------------------------------
 # Plotting
 # ---------------------------------------------------------------------------
@@ -247,9 +281,9 @@ def _print_summary(run_name, run_results):
 
 def plot_results(
     results,
-    run_names=("HL", "HLV"),
+    run_names=("IR1HL", "IR1HLV"),
     telescope_name="telescope",
-    outdir="./",
+    outdir=str(OUTPUT_DIR),
     filename="ndet_BNS_NSBH.pdf",
     show=True,
 ):
@@ -265,7 +299,7 @@ def plot_results(
     outdir : str or None
         Directory to save the figure. If ``None``, the figure is not saved.
     filename : str
-        Output file name (default: ``ndet_ZTF_BNS_NSBH.pdf``).
+        Output file name (default: ``ndet_BNS_NSBH.pdf``).
     show : bool
         Call ``plt.show()`` at the end (default: True).
 
@@ -281,13 +315,10 @@ def plot_results(
     gs = gridspec.GridSpec(1, len(run_names))
     axes = [fig.add_subplot(gs[i]) for i in range(len(run_names))]
 
-    # fig.suptitle(
-    #     f"KN detectability  -- {telescope_name}", fontsize=28, fontweight="bold", y=1.02
-    # )
-
     bins = np.arange(0, 30, 1)
 
     for ax, run_name in zip(axes, run_names):
+        network = _network_label(run_name)
         s_BNS = results[run_name]["BNS"]
         s_NSBH = results[run_name]["NSBH"]
 
@@ -328,7 +359,7 @@ def plot_results(
             linewidth=2.5,
         )
 
-        if run_name == "HL":
+        if network == "HL":
             ax.text(-3.5, 0.69, "NSBH", color="k", fontsize=24, bbox=bbox_NSBH)
             ax.text(-4.2, 0.60, f"<N>={s_NSBH['mean']:.1f}", fontsize=24)
             ax.text(3.6, 0.20, "BNS", color="k", fontsize=24, bbox=bbox_BNS)
@@ -343,7 +374,7 @@ def plot_results(
         ax.text(
             10,
             0.8,
-            run_name,
+            network,
             color="navy",
             fontweight="bold",
             fontsize=30,
@@ -356,10 +387,8 @@ def plot_results(
 
         ax.set_xlabel("Number of events", size=27)
 
-        xlim = (-4.8, 20) if run_name == "HL" else (-5, 20)
+        xlim = (-4.8, 20) if network == "HL" else (-5, 20)
         ax.set_xlim(*xlim)
-        # xlim = (0, 8) if run_name == "HL" else (0, 10)
-        # ax.set_xlim(*xlim)
 
     axes[0].set_ylabel(
         "Cumulative probability density",
@@ -380,41 +409,44 @@ def plot_results(
     return fig
 
 
-# # ============================================================================
-# # Telescope configurations
-# # ============================================================================
+# ---------------------------------------------------------------------------
+# Standalone entry point. Guarded so importing this module from a notebook
+# (`from paper_plots.kn_detection import run_analysis, plot_results`, as
+# quick_start.ipynb does) only pulls in the functions above and never
+# triggers this three-telescope run as a side effect.
+# ---------------------------------------------------------------------------
 
-# TELESCOPES = {
-#     "GOTO": {"mlim": 20.0, "Mabs": -16},
-#     "ZTF": {"mlim": 22.0, "Mabs": -16},
-#     "Vera C. Rubin": {"mlim": 25.7, "Mabs": -16},
-# }
+TELESCOPES = {
+    "GOTO": {"mlim": 20.0, "Mabs": -16},
+    "ZTF": {"mlim": 22.0, "Mabs": -16},
+    "Vera C. Rubin": {"mlim": 25.7, "Mabs": -16},
+}
 
+# -- Shared config, FullPop over IR1 -------------------------------------------
+COMMON = dict(
+    datapath=RUNS_DIR,
+    run_names=["IR1HL", "IR1HLV"],
+    model="fullpop",
+    Number_BNS={"IR1HL": 0, "IR1HLV": 1},
+    Number_NSBH={"IR1HL": 0, "IR1HLV": 1},
+    ns_max_mass=3.0,
+    n_realizations=100_000,
+    seed=42,
+    verbose=True,
+)
 
-# # -- Shared config -------------------------------------------------------------
-# COMMON = dict(
-#     datapath="../data/runs/IR1",
-#     run_names=["HL", "HLV"],
-#     Number_BNS={"HL": 1, "HLV": 2},
-#     Number_NSBH={"HL": 2, "HLV": 2},
-#     ns_max_mass=3.0,
-#     n_realizations=100_000,
-#     seed=42,
-#     verbose=True,
-# )
-
-# # Run the analysis
-# for telescope, cfg in TELESCOPES.items():
-#     if telescope == "ZTF":
-#         results, d_max = run_analysis(
-#             **COMMON,
-#             **cfg,
-#             telescope_name=telescope,
-#         )
-#         plot_results(
-#             results,
-#             run_names=COMMON["run_names"],
-#             telescope_name=telescope,
-#             outdir="./",
-#             show=True,
-#         )
+if __name__ == "__main__":
+    for telescope, cfg in TELESCOPES.items():
+        results, d_max = run_analysis(
+            **COMMON,
+            **cfg,
+            telescope_name=telescope,
+        )
+        plot_results(
+            results,
+            run_names=COMMON["run_names"],
+            telescope_name=telescope,
+            outdir=str(OUTPUT_DIR),
+            filename=f"ndet_BNS_NSBH_{telescope.replace(' ', '_')}.pdf",
+            show=False,
+        )

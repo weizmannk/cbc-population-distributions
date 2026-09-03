@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import numpy as np
@@ -10,22 +9,32 @@ from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
 from tqdm.auto import tqdm
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-path_dir = "../data/runs"
-outdir = "./"
-
-if not os.path.isdir(outdir):
-    os.makedirs(outdir)
+#: Anchor on this file's own location, not the caller's cwd. Same
+#: convention as population_stats.py/kn_detection.py/o4_alert_comparison.py.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPT_DIR.parent.parent
+DATA_DIR = _REPO_ROOT / "data"
+RUNS_DIR = DATA_DIR / "runs"
+OUTPUT_DIR = _SCRIPT_DIR.parent / "outputs" / "gaussian_kde_distribustion_distance_mass"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-run_names = run_dirs = ["O5a-HLV", "O5c-HLV"]
+# O5a and O5c only, matching the old version's own choice of runs
+# ("O5a-HLV", "O5c-HLV") -- just without the "-HLV" suffix, since the
+# actual folder names carry no network suffix (renamed during the repo
+# reorganisation: it's data/runs/O5a, not data/runs/O5a-HLV).
+run_names = run_dirs = ["O5a", "O5c"]
+MODEL = "fullpop"  # or "pixelpop"
 NS_MAX_MASS = 3.0  # M_sun
 
 # ── Read data ──────────────────────────────────────────────────────────────────
 tables = {}
 with tqdm(total=len(run_dirs)) as progress:
     for run_name, run_dir in zip(run_names, run_dirs):
-        path = Path(f"{path_dir}/{run_dir}/fullpop4")
+        # "fullpop4" no longer exists -- that was the GWTC-4.0-era model
+        # folder name; the current campaigns are split into fullpop/pixelpop
+        # subfolders under each run (see MODEL above).
+        path = RUNS_DIR / run_dir / MODEL
         injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
         injections.rename_column("simulation_id", "event_id")
 
@@ -119,7 +128,7 @@ for i, run_name in enumerate(run_names):
         ax = axs[i, j]
         mask = masks[cat]
         sc = distance_mass_scatter(
-            ax, dist[mask], m1[mask], title=rf"{run_name} - {cat}  (N={mask.sum():,})"
+            ax, dist[mask], m1[mask], title=rf"{run_name} -- {cat}  (N={mask.sum():,})"
         )
 
         if sc is not None:
@@ -133,6 +142,6 @@ for i, run_name in enumerate(run_names):
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.3, wspace=0.2)
-plt.savefig(f"{outdir}/distance_mass_scatter.pdf", dpi=300, bbox_inches="tight")
-plt.savefig(f"{outdir}/distance_mass_scatter.png", dpi=300, bbox_inches="tight")
+plt.savefig(str(OUTPUT_DIR / "distance_mass_scatter.pdf"), dpi=300, bbox_inches="tight")
+plt.savefig(str(OUTPUT_DIR / "distance_mass_scatter.png"), dpi=300, bbox_inches="tight")
 plt.close()
