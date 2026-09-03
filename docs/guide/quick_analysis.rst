@@ -6,20 +6,30 @@ Quick analysis notebook
 
 .. dropdown:: Quick analysis notebook
 
-    Run the quick analysis in an interactive Jupyter notebook to visualize the model versus the drawn distribution:
+    Visualize the model versus the drawn distribution. Read it right here, or launch it
+    on Colab from the notebook page:
 
-    .. button-link:: https://colab.research.google.com/github/weizmannk/cbc-population-distributions/blob/main/scripts/notebooks/quick_start.ipynb
+    .. button-ref:: /notebooks/quick_start
+        :ref-type: doc
         :color: info
         :shadow:
 
-        Open in Colab
+        Read the notebook
 
 .. dropdown:: How do we determine the GW detection rate?
 
-    This notebook explains, step-by-step, how to calculate the GW detection rate.
+    This notebook explains, step-by-step, how to calculate the GW detection rate. Read it
+    right here, or launch it on Colab from the notebook page:
 
-    .. button-link:: https://colab.research.google.com/github/weizmannk/cbc-population-distributions/blob/main/scripts/notebooks/detection_rate.ipynb
+    .. button-ref:: /notebooks/detection_rate
+        :ref-type: doc
         :color: info
         :shadow:
 
-        Open in Colab
+        Read the notebook
+
+.. toctree::
+    :hidden:
+
+    /notebooks/quick_start
+    /notebooks/detection_rate

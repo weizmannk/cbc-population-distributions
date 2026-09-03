@@ -5,18 +5,19 @@ Installation
 ============
 
 This guide explains how to install the required components to run the Makefile and
-draw the GWTC-4 distribution. It is recommended to use `uv <https://docs.astral.sh/uv/>`_
+draw the GWTC-5.0 distribution. It is recommended to use `uv <https://docs.astral.sh/uv/>`_
 to create and manage the virtual environment, which avoids dependency conflicts.
 
 .. note::
 
    The model describes neutron stars and the primary black hole mass distribution as a broken power law
    between minimum and maximum masses, with two Gaussian peaks at
-   :math:`\sim 10~M_\odot` and :math:`\sim 35~M_\odot`.
+   :math:`\sim 30~M_\odot` and :math:`\sim 9~M_\odot` (posterior median; see
+   :ref:`hyperparams` for the full table).
    The file includes the posterior values for mass, spin, and merger-rate hyperparameters.
 
    Using these hyperparameters, the model can be used to generate synthetic :term:`CBC` distributions
-   under the GWTC-4 AllCBC_FullPop-4.0 population model. Here, we draw a distribution of one million
+   under the GWTC-5.0 FullPop population model. Here, we draw a distribution of one million
    samples to be used with the `observing-scenarios pipeline <https://github.com/lpsinger/observing-scenarios-simulations/>`_
    together with ``ligo.skymap`` to simulate observing campaigns for upcoming runs.
 
@@ -46,16 +47,16 @@ to create and manage the virtual environment, which avoids dependency conflicts.
 Read the hyperparams file
 =========================
 
-Below we provide a small script to read the FullPop-4.0 result file with **bilby**
-and extract the MAP (or ML) sample.
+Below we provide a small script to read the FullPop (GWTC-5.0) result file with **bilby**
+and extract the MAP and posterior-median samples.
 
-:download:`fullpop4_hyperparams <../../scripts/fullpop4_hyperparams.py>`
+:download:`get_hyperparams <../../scripts/hyperparams/get_hyperparams.py>`
 
 .. dropdown:: Show script
    :icon: code
    :animate: fade-in
 
-   .. literalinclude:: ../../scripts/fullpop4_hyperparams.py
+   .. literalinclude:: ../../scripts/hyperparams/get_hyperparams.py
       :language: python
       :linenos:
 

@@ -1,4 +1,4 @@
-.. table:: Hyperparameters of the FullPop-4.0 Distribution Model
+.. table:: Hyperparameters of the FullPop Distribution Model (GWTC-5.0), posterior median.
    :widths: auto
 
    +--------------------------------------------------+------------------------------------------------------+-----------------+
@@ -6,46 +6,46 @@
    +==================================================+======================================================+=================+
    | *Mass Distribution*                                                                                                       |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`m_{\mathrm{min,NS}}`                      | Minimum neutron star mass (:math:`M_\odot`)          | 1.18            |
+   | :math:`m_{\mathrm{min,NS}}`                      | Minimum neutron star mass (:math:`M_\odot`)          | 1.19            |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`m_{\mathrm{max,NS}} \equiv                | Maximum neutron star mass (:math:`M_\odot`)          | 4.09            |
+   | :math:`m_{\mathrm{max,NS}} \equiv                | Maximum neutron star mass (:math:`M_\odot`)          | 3.28            |
    | \gamma_{\mathrm{low},1}`                         |                                                      |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`m_{\mathrm{min,BH}} \equiv                | Minimum black hole mass (:math:`M_\odot`)            | 7.76            |
+   | :math:`m_{\mathrm{min,BH}} \equiv                | Minimum black hole mass (:math:`M_\odot`)            | 8.22            |
    | \gamma_{\mathrm{high},1}`                        |                                                      |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\gamma_{\mathrm{low},2}`                  | Lower boundary of pair-instability gap               | 38.3            |
+   | :math:`\gamma_{\mathrm{low},2}`                  | Lower boundary of pair-instability gap               | 42.58           |
    |                                                  | (:math:`M_\odot`)                                    |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\gamma_{\mathrm{high},2}`                 | Upper boundary of pair-instability gap               | 66.58           |
+   | :math:`\gamma_{\mathrm{high},2}`                 | Upper boundary of pair-instability gap               | 107.03          |
    |                                                  | (:math:`M_\odot`)                                    |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`m_{\mathrm{max,BH}}`                      | Maximum black hole mass (:math:`M_\odot`)            | 152             |
+   | :math:`m_{\mathrm{max,BH}}`                      | Maximum black hole mass (:math:`M_\odot`)            | 142.0           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\alpha_1`                                 | Power-law exponent for masses below                  | −4.51           |
+   | :math:`\alpha_1`                                 | Power-law exponent for masses below                  | −5.05           |
    |                                                  | :math:`m_{\mathrm{max,NS}}`                          |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\alpha_{\mathrm{dip}}`                    | Power-law exponent within the NS–BH mass gap         | −1.68           |
+   | :math:`\alpha_{\mathrm{dip}}`                    | Power-law exponent within the NS–BH mass gap         | −1.77           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\alpha_2`                                 | Power-law exponent for masses above                  | −0.902          |
+   | :math:`\alpha_2`                                 | Power-law exponent for masses above                  | −0.83           |
    |                                                  | :math:`m_{\mathrm{min,BH}}`                          |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\mu_{\mathrm{peak},1}`                    | Mean of primary Gaussian peak (:math:`M_\odot`)      | 37.81           |
+   | :math:`\mu_{\mathrm{peak},1}`                    | Mean of primary Gaussian peak (:math:`M_\odot`)      | 29.53           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\sigma_{\mathrm{peak},1}`                 | Std. dev. of primary Gaussian peak (:math:`M_\odot`) | 17.13           |
+   | :math:`\sigma_{\mathrm{peak},1}`                 | Std. dev. of primary Gaussian peak (:math:`M_\odot`) | 13.24           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`c_1`                                      | Mixing fraction of primary Gaussian peak             | 735.47          |
+   | :math:`c_1`                                      | Mixing fraction of primary Gaussian peak             | 369.62          |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\mu_{\mathrm{peak},2}`                    | Mean of secondary Gaussian peak (:math:`M_\odot`)    | 8.9             |
+   | :math:`\mu_{\mathrm{peak},2}`                    | Mean of secondary Gaussian peak (:math:`M_\odot`)    | 8.63            |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\sigma_{\mathrm{peak},2}`                 | Std. dev. of secondary Gaussian peak                 | 1.04            |
+   | :math:`\sigma_{\mathrm{peak},2}`                 | Std. dev. of secondary Gaussian peak                 | 1.50            |
    |                                                  | (:math:`M_\odot`)                                    |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`c_2`                                      | Mixing fraction of secondary Gaussian peak           | 211.73          |
+   | :math:`c_2`                                      | Mixing fraction of secondary Gaussian peak           | 293.67          |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`A_1`                                      | Depth of primary mass gap suppression                | 0.0915          |
+   | :math:`A_1`                                      | Depth of primary mass gap suppression                | 0.496           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`A_2`                                      | Depth of pair-instability gap suppression            | 0.828           |
+   | :math:`A_2`                                      | Depth of pair-instability gap suppression            | 0.542           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | :math:`\eta_0`                                   | Sharpness of low-mass truncation                     | 50              |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
@@ -57,27 +57,27 @@
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | :math:`\eta_4`                                   | Sharpness at :math:`\gamma_{\mathrm{high},2}`        | 30              |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\eta_5`                                   | Sharpness of high-mass truncation                    | 10              |
+   | :math:`\eta_5`                                   | Sharpness of high-mass truncation                    | 6.14            |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | *Pairing Function*                                                                                                        |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | :math:`m_{\mathrm{break}}`                       | Pairing function break mass (:math:`M_\odot`)        | 5.0             |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\beta_1`                                  | Pairing power-law index for                          | 0.964           |
+   | :math:`\beta_1`                                  | Pairing power-law index for                          | 1.17            |
    |                                                  | :math:`m_2 < m_{\mathrm{break}}`                     |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\beta_2`                                  | Pairing power-law index for                          | 2.16            |
+   | :math:`\beta_2`                                  | Pairing power-law index for                          | 2.44            |
    |                                                  | :math:`m_2 \geq m_{\mathrm{break}}`                  |                 |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | *Spin Distribution*                                                                                                       |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\mu_{\chi}`                               | Mean of spin magnitude Gaussian component            | 0.0137          |
+   | :math:`\mu_{\chi}`                               | Mean of spin magnitude Gaussian component            | 0.035           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\sigma_{\chi}`                            | Std. dev. of spin magnitude Gaussian component       | 0.31            |
+   | :math:`\sigma_{\chi}`                            | Std. dev. of spin magnitude Gaussian component       | 0.33            |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
    | :math:`a_{\mathrm{max}}`                         | Maximum spin magnitude                               | 1               |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\xi_{\mathrm{spin}}`                      | Fraction of BHs in preferentially aligned component  | 0.713           |
+   | :math:`\xi_{\mathrm{spin}}`                      | Fraction of BHs in preferentially aligned component  | 0.64            |
    +--------------------------------------------------+------------------------------------------------------+-----------------+
-   | :math:`\sigma_{\mathrm{spin}}`                   | Width of preferentially aligned component            | 0.56            |
+   | :math:`\sigma_{\mathrm{spin}}`                   | Width of preferentially aligned component            | 1.135           |
    +--------------------------------------------------+------------------------------------------------------+-----------------+

@@ -156,6 +156,14 @@ thebe_config = {
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 exclude_patterns.append("_templates")  # noqa: F405
+# docs/notebooks is a symlink to scripts/notebooks; only the notebooks
+# wired into guide/quick_analysis.rst's toctree are meant to be built as
+# doc pages, so keep the rest (not yet reviewed for publication) out of
+# the build instead of letting them show up unreferenced.
+exclude_patterns += [
+    "notebooks/SNR_FAR_detection_criterion.ipynb",
+    "notebooks/cbc_pipeline_step_by_step.ipynb",
+]
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
@@ -290,6 +298,21 @@ if on_rtd:
     nbsphinx_execute = "auto"
 else:
     nbsphinx_execute = "never"
+
+# Auto-inject a "Open in Colab" button at the top of every rendered
+# notebook page, computed from the notebook's own filename so it works
+# for any notebook under docs/notebooks (symlinked to
+# scripts/notebooks/) without hand-writing a link per page.
+nbsphinx_prolog = r"""
+{% set docname = env.doc2path(env.docname, base=None).split("/")[-1] %}
+
+.. button-link:: https://colab.research.google.com/github/weizmannk/cbc-population-distributions/blob/main/scripts/notebooks/{{ docname }}
+   :color: info
+   :shadow:
+   :align: right
+
+   Open in Colab
+"""
 
 sd_fontawesome_latex = True
 

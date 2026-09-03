@@ -1,13 +1,13 @@
 .. _hyperparams:
 
-======================================
-Population Model (GWTC-4): FullPop-4.0
-======================================
+=====================================
+Population Model (GWTC-5.0): FullPop
+=====================================
 
 
 .. dropdown:: Primary Mass Distribution
 
-    The figure below shows the one-dimensional FullPop-4.0 mass distribution
+    The figure below shows the one-dimensional FullPop mass distribution
     :math:`p(m|\lambda)` for the primary black hole mass in the range
     :math:`[1, 100]\,M_\odot`. The model combines a broken power law with two Gaussian peaks
     and includes two characteristic features: the neutron star–black hole mass gap
@@ -74,26 +74,27 @@ Population Model (GWTC-4): FullPop-4.0
             )
 
         # =========================================================
-        # GWTC-4  FullPop-4.0 (https://arxiv.org/abs/2508.18083)
+        # GWTC-5.0  FullPop, posterior median
+        # (scripts/hyperparams/hyperparams_table_gwtc5_median.tex)
         # =========================================================
-        A          = 0.091462
-        A2         = 0.828165
-        BH_MAX     = 152.055979
-        BH_MIN     = 7.763955
-        NS_MAX     = 4.094744
-        NS_MIN     = 1.176367
-        UPPER_MAX  = 66.576705
-        UPPER_MIN  = 38.277415
-        ALPHA_1    = -4.509283
-        ALPHA_2    = -0.902035
-        ALPHA_DIP  = -1.679769
-        MIX1       = 735.473276
-        MIX2       = 211.733327
-        MU1        = 37.811196
-        MU2        = 8.897742
-        SIG1       = 17.126431
-        SIG2       = 1.044693
-        N0, N1, N2, N3, N4, N5 = 50.0, 50.0, 50.0, 30.0, 30.0, 10.041072
+        A          = 0.496
+        A2         = 0.542
+        BH_MAX     = 142.0
+        BH_MIN     = 8.22
+        NS_MAX     = 3.28
+        NS_MIN     = 1.19
+        UPPER_MAX  = 107.03
+        UPPER_MIN  = 42.58
+        ALPHA_1    = -5.05
+        ALPHA_2    = -0.83
+        ALPHA_DIP  = -1.77
+        MIX1       = 369.62
+        MIX2       = 293.67
+        MU1        = 29.53
+        MU2        = 8.63
+        SIG1       = 13.24
+        SIG2       = 1.50
+        N0, N1, N2, N3, N4, N5 = 50.0, 50.0, 50.0, 30.0, 30.0, 6.14
         INJ_MMIN, INJ_MMAX = 1.0, 500.0
 
         def fullpop(m):
@@ -124,17 +125,19 @@ Population Model (GWTC-4): FullPop-4.0
             norm = np.trapezoid(m * pdf, np.log(m))
             return pdf / norm
 
-        fp4  = normalise_log(m, fullpop(m))
+        fp5  = normalise_log(m, fullpop(m))
         pdb  = normalise_log(m, power_law_dip_break(m))
 
         # =========================================================
-        # Boundary ticks (FullPop-4.0 landmarks)
+        # Boundary ticks (FullPop landmarks). Only the pair-instability
+        # gap uses the gamma notation; the lower gap is named after the
+        # NS/BH boundary masses it actually is.
         # =========================================================
         boundary_masses  = [NS_MIN, NS_MAX, BH_MIN, UPPER_MIN, UPPER_MAX]
         boundary_labels  = [
             r"$M_{\min}$",
-            r"$\gamma_{\mathrm{low,1}}$",
-            r"$\gamma_{\mathrm{high,1}}$",
+            r"$m_{\mathrm{max,NS}}$",
+            r"$m_{\mathrm{min,BH}}$",
             r"$\gamma_{\mathrm{low,2}}$",
             r"$\gamma_{\mathrm{high,2}}$",
         ]
@@ -146,9 +149,9 @@ Population Model (GWTC-4): FullPop-4.0
         ax.set_xscale("log")
         ax.set_yscale("log")
 
-        ax.plot(m, m * fp4,
+        ax.plot(m, m * fp5,
                 color="#9400D3", linewidth=2.0, linestyle="-",
-                label="GWTC-4: FullPop-4.0")
+                label="GWTC-5.0: FullPop")
         ax.plot(m, m * pdb,
                 color="#555555", linewidth=2.0, linestyle="--",
                 label="GWTC-3: Power Law + Dip + Break")

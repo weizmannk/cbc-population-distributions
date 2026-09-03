@@ -123,14 +123,46 @@ def poisson_lognormal_rate_quantiles(p, mu, sigma):
     return result.root
 
 
-def format_with_errorbars(mid, lo, hi):
-    plus = hi - mid
-    minus = mid - lo
-    smallest = min(max(0, plus), max(0, minus))
+# def format_with_errorbars(mid, lo, hi):
+#     plus = hi - mid
+#     minus = mid - lo
+#     smallest = min(max(0, plus), max(0, minus))
 
-    if smallest == 0:
+#     if smallest == 0:
+#         return str(mid), "0", "0"
+#     decimals = 1 - int(np.floor(np.log10(smallest)))
+
+#     if all(np.issubdtype(type(_), np.integer) for _ in (mid, lo, hi)):
+#         decimals = min(decimals, 0)
+
+
+#     plus, minus, mid = np.round([plus, minus, mid], decimals)
+#     if decimals > 0:
+#         fstring = "%%.0%df" % decimals
+#     else:
+#         fstring = "%d"
+#     return [fstring % _ for _ in [mid, minus, plus]]
+# FIXME:  No return 0 of upper limit and lower ones when median is 0.
+def format_with_errorbars(mid, lo, hi):
+    """Format a value as mid, minus, plus for a ``mid^{+plus}_{-minus}`` label.
+
+    The two error bars are handled independently. A previous version returned
+    ("0", "0", "0") as soon as *either* bar was zero, which silently discarded
+    a genuinely non-zero upper bar whenever the median was 0 (the common case
+    for low-rate BNS/NSBH counts, where the 5th and 50th percentiles are both 0
+    but the 95th is not). The guard below is only there to avoid log10(0) in the
+    `decimals` computation, so it must fire only when *both* bars vanish.
+    """
+    plus = max(0.0, hi - mid)
+    minus = max(0.0, mid - lo)
+
+    nonzero = [e for e in (plus, minus) if e > 0]
+    if not nonzero:
+        # Both bars are zero: nothing to size the rounding on, and log10(0)
+        # would blow up. This is the only case that should collapse to 0/0.
         return str(mid), "0", "0"
-    decimals = 1 - int(np.floor(np.log10(smallest)))
+
+    decimals = 1 - int(np.floor(np.log10(min(nonzero))))
 
     if all(np.issubdtype(type(_), np.integer) for _ in (mid, lo, hi)):
         decimals = min(decimals, 0)
@@ -157,6 +189,12 @@ run_names = run_dirs = [
     "O5b",
     "O5c",
 ]
+# summary.rst/extremes.rst are meant for the Zenodo archive and want the
+# full run history (O4a onward), even though the comparison figures above
+# stay IR1+O5-only to avoid crowding 7-8 categories into one legend/color
+# palette. This broader list feeds only the data-loading loop below;
+# run_names keeps driving every figure unchanged.
+stats_run_names = stats_run_dirs = ["O4a", "O4b"] + run_names
 pops = ["BNS", "NSBH", "BBH"]  # Populations
 classification_names = pops
 classification_colors = seaborn.color_palette(n_colors=len(classification_names))
@@ -269,7 +307,7 @@ for model_name, rates_table in [
     ## Load all data sets
 
     tables = {}
-    for run_name, run_dir in zip(tqdm(run_names), run_dirs):
+    for run_name, run_dir in zip(tqdm(stats_run_names), stats_run_dirs):
         path = RUNS_DIR / run_dir / model_name
         allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
         injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
@@ -330,7 +368,11 @@ for model_name, rates_table in [
     ############
 
     axs = [plt.subplots()[1] for _ in range(len(fieldnames))]
-    colors = seaborn.color_palette("colorblind", len(tables))
+    # Sized by run_names (not tables): tables now also carries O4a/O4b for
+    # summary.rst/extremes.rst below, but this figure's own legend only
+    # ever lists run_names, so its data loop and color count must match
+    # that, not the full tables dict.
+    colors = seaborn.color_palette("colorblind", len(run_names))
     real_color = "black"
     linestyles = ["-", "--", ":"]
 
@@ -375,8 +417,8 @@ for model_name, rates_table in [
     zax.set_xticklabels([str(_) for _ in z])
     zax.set_xlabel("Redshift")
 
-    for irun, (run_name, tables1) in enumerate(tables.items()):
-        for ipop, (pop, table) in enumerate(tables1.items()):
+    for irun, run_name in enumerate(run_names):
+        for ipop, (pop, table) in enumerate(tables[run_name].items()):
             for ifield, fieldname in enumerate(fieldnames):
                 data = table[fieldname]
                 data = data[np.isfinite(data) & (data > 0)]
