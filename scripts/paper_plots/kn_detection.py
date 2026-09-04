@@ -11,9 +11,21 @@
                   Import run_analysis/plot_results from a notebook (they take no
                   module-level state), or run this file directly to reproduce the
                   three-telescope comparison at the bottom.
+
+                  Statistical model: for each run and source class, the expected
+                  number of GW detections is lambda = R_i * V_s * T_obs (merger-rate
+                  density x sensitive volume x observing duration). The number of
+                  those detections whose *true* distance also falls inside a given
+                  telescope's KN horizon is then lambda * f_hor, where f_hor is the
+                  fraction of the detected catalogue within that horizon. Both
+                  quantities carry the same Poisson-lognormal uncertainty already
+                  used for the GW detection counts elsewhere in this project, so the
+                  KN counts inherit it directly instead of being computed from a
+                  fixed, rounded-to-the-nearest-integer detection count.
 """
 
 import os
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -24,7 +36,9 @@ from astropy import units as u
 from astropy.coordinates import Distance
 from astropy.cosmology import Planck15 as cosmo
 from astropy.cosmology import z_at_value
-from astropy.table import Table
+from astropy.table import Table, join
+from ligo.skymap.util import sqlite
+from scipy import stats
 
 #: Anchor on this file's own location, not the caller's cwd. This is what
 #: lets the same defaults work whether the module is run directly
@@ -35,6 +49,12 @@ _REPO_ROOT = _SCRIPT_DIR.parent.parent
 DATA_DIR = _REPO_ROOT / "data"
 RUNS_DIR = DATA_DIR / "runs"
 OUTPUT_DIR = _SCRIPT_DIR.parent / "outputs" / "kn_detection"
+
+#: poisson_lognormal_rate_quantiles is shared with detection_rate.ipynb and
+#: population_stats.py, so the KN counts use exactly the same quantile
+#: convention as every other detection-count estimate in this project.
+sys.path.insert(0, str(_SCRIPT_DIR.parent))
+from poisson_rate_utils import poisson_lognormal_rate_quantiles  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Plotting defaults
@@ -47,13 +67,23 @@ matplotlib.rcParams["axes.titlesize"] = 18
 COLOR_BNS = "crimson"  # Binary Neutron Star
 COLOR_NSBH = "steelblue"  # Neutron Star - Black Hole
 
+#: Source-class mass boundary, and the H5 population-sample file used to
+#: split the combined merger rate into per-class rates (see
+#: rates_table_for_model below). One file per model, same convention as
+#: scripts/paper_plots/population_stats.py.
+NS_MAX_MASS = 3.0
+_CBC_SAMPLES_PATH = {
+    "fullpop": DATA_DIR / "raw" / "fullpop_grid.h5",
+    "pixelpop": DATA_DIR / "raw" / "pixelpop.h5",
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def populations_bool(table, pop, ns_max_mass=3.0):
+def populations_bool(table, pop, ns_max_mass=NS_MAX_MASS):
     """
     Classify CBC injections into BNS, NSBH, or BBH based on source-frame mass.
 
@@ -106,35 +136,245 @@ def telescope_distance_limit(Mabs=-16, mlim=22):
     return d.value
 
 
-def run_realizations(allsky_df, N_events, d_max_mpc, n_realizations=100_000, seed=42):
+# ---------------------------------------------------------------------------
+# Merger-rate model: combined GWTC-5.0 rate, split into per-class rates with
+# their own log-normal (mu, sigma), same construction as
+# scripts/paper_plots/population_stats.py so both scripts report detection
+# counts on an identical statistical footing.
+# ---------------------------------------------------------------------------
+
+_STANDARD_90PCT_INTERVAL = np.diff(stats.norm.interval(0.9))[0]
+
+
+def _combined_rate_row(label):
+    """Read the (lower_5, median, upper_95) combined merger rate for one
+    population-model label from data/derived/rate_summary.csv, in
+    Gpc^-3 yr^-1. Not yet split by source class.
     """
-    Monte-Carlo: draw ``N_events`` random distances from the catalogue and
-    count how many fall within ``d_max_mpc``.
+    rate_summary = Table.read(
+        DATA_DIR / "derived" / "rate_summary.csv", format="ascii.csv"
+    )
+    (row,) = rate_summary[rate_summary["label"] == label]
+    return float(row["lower_5"]), float(row["median"]), float(row["upper_95"])
+
+
+def rates_table_for_model(model, ns_max_mass=NS_MAX_MASS):
+    """
+    Per-class merger-rate table for one population model, with a log-normal
+    (mu, sigma) fit to each class's (lower, mid, upper) rate.
+
+    The combined rate (all classes together) is split into BNS/NSBH/BBH by
+    each class's fraction of the model's own simulated mass samples, so the
+    resulting per-class rates stay self-consistent with what was actually
+    simulated for this run, rather than importing an independently
+    normalized per-class rate from elsewhere.
 
     Parameters
     ----------
-    allsky_df : pandas.DataFrame
-        All-sky catalogue with column ``distmean``.
-    N_events : int
-        Expected number of detections for this run.
+    model : str
+        ``'fullpop'`` or ``'pixelpop'``.
+    ns_max_mass : float
+        Maximum neutron-star mass in solar masses.
+
+    Returns
+    -------
+    astropy.table.Table
+        One row per population (``BNS``, ``NSBH``, ``BBH``), with columns
+        ``mass_fraction``, ``lower``, ``mid``, ``upper`` (Gpc^-3 yr^-1),
+        ``mu`` and ``sigma`` (log-normal parameters of ``mid``).
+    """
+    label = {"fullpop": "GWTC-5.0 FullPop", "pixelpop": "GWTC-5.0 PixelPop"}[model]
+    lower, mid, upper = _combined_rate_row(label)
+
+    cbc = Table.read(_CBC_SAMPLES_PATH[model])
+    m1, m2 = cbc["mass1"], cbc["mass2"]
+    mass_fraction = np.asarray(
+        [
+            np.sum((m1 < ns_max_mass) & (m2 < ns_max_mass)),
+            np.sum((m1 >= ns_max_mass) & (m2 < ns_max_mass)),
+            np.sum((m1 >= ns_max_mass) & (m2 >= ns_max_mass)),
+        ]
+    ) / len(cbc)
+
+    table = Table(
+        {
+            "population": ["BNS", "NSBH", "BBH"],
+            "mass_fraction": mass_fraction,
+            "lower": lower * mass_fraction,
+            "mid": mid * mass_fraction,
+            "upper": upper * mass_fraction,
+        }
+    )
+    table["mu"] = np.log(table["mid"])
+    # The mass_fraction scaling cancels in this difference (it multiplies
+    # both upper and lower alike), so sigma is really the shared,
+    # class-independent width of the combined-rate posterior -- but it is
+    # computed per row here for clarity and to keep this table
+    # self-contained.
+    table["sigma"] = (
+        np.log(table["upper"]) - np.log(table["lower"])
+    ) / _STANDARD_90PCT_INTERVAL
+    return table
+
+
+def load_run_catalog(run_name, model, datapath=RUNS_DIR, ns_max_mass=NS_MAX_MASS):
+    """
+    Load one run's detected-event catalogue and simulated rate density,
+    split by source class.
+
+    Parameters
+    ----------
+    run_name : str
+        Run folder name under ``datapath``, e.g. ``'IR1HL'``.
+    model : str
+        ``'fullpop'`` or ``'pixelpop'``.
+    datapath : str or Path
+        Root path to the simulation data (``data/runs/``).
+    ns_max_mass : float
+        Maximum neutron-star mass in solar masses.
+
+    Returns
+    -------
+    dict
+        Keyed by population (``'BNS'``, ``'NSBH'``, ``'BBH'``), each value a
+        dict with ``n_detected`` (int, number of events found in this run)
+        and ``distance_true`` (numpy.ndarray, true injected distances in
+        Mpc for those events -- the physical quantity that determines
+        whether a kilonova is actually bright enough to see, as opposed to
+        the GW pipeline's own post-detection distance *estimate*).
+    rate_sim_gpc : float
+        The simulated injection rate density (Gpc^-3 yr^-1) this run's
+        catalogue was generated at, read from the run's own
+        ``events.sqlite``.
+    """
+    path = Path(datapath) / run_name / model
+    allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
+    injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
+    allsky.rename_column("coinc_event_id", "event_id")
+    injections.rename_column("simulation_id", "event_id")
+    table = join(allsky, injections)
+
+    with sqlite.open(str(path / "events.sqlite"), "r") as db:
+        ((result,),) = db.execute(
+            "SELECT comment FROM process WHERE program = ?", ("bayestar-inject",)
+        )
+        rate_sim_gpc = u.Quantity(result).to_value(u.Gpc**-3 * u.yr**-1)
+
+    # z_at_value does a per-element root-find and is the expensive part of
+    # populations_bool -- computed once here and reused for all three
+    # classes, instead of calling populations_bool three times and paying
+    # for the same redshift solve on the same catalogue three times over.
+    z = z_at_value(cosmo.luminosity_distance, table["distance"] * u.Mpc).to_value(
+        u.dimensionless_unscaled
+    )
+    zp1 = z + 1
+    source_mass1 = table["mass1"] / zp1
+    source_mass2 = table["mass2"] / zp1
+    masks = {
+        "BNS": (source_mass1 < ns_max_mass) & (source_mass2 < ns_max_mass),
+        "NSBH": (source_mass1 >= ns_max_mass) & (source_mass2 < ns_max_mass),
+        "BBH": (source_mass1 >= ns_max_mass) & (source_mass2 >= ns_max_mass),
+    }
+
+    catalog = {}
+    for pop, mask in masks.items():
+        catalog[pop] = {
+            "n_detected": int(np.sum(mask)),
+            "distance_true": np.asarray(table["distance"][mask]),
+        }
+    return catalog, rate_sim_gpc
+
+
+# ---------------------------------------------------------------------------
+# Expected KN-accessible counts
+# ---------------------------------------------------------------------------
+
+
+def kn_expected(distance_true_mpc, lam, d_max_mpc, sigma, quantiles=(0.05, 0.5, 0.95)):
+    """
+    Expected number of KN-accessible events, lambda * f_hor, with a
+    Poisson-lognormal credible interval.
+
+    Thinning a Poisson process by a constant fraction f_hor yields another
+    Poisson process at the scaled rate lambda * f_hor; if the parent rate
+    carries a log-normal prior with scale sigma, the thinned rate's prior is
+    log-normal with the *same* sigma, mean shifted by log(f_hor). So this
+    reuses exactly the rate uncertainty already inferred for the GW
+    detection count, rather than introducing a separate one.
+
+    Parameters
+    ----------
+    distance_true_mpc : numpy.ndarray
+        True injected distance (Mpc) of every GW-detected event of this
+        source class and run.
+    lam : float
+        Expected number of GW detections for this class and run
+        (lambda = R_i * V_s * T_obs).
     d_max_mpc : float
-        Telescope detection horizon in Mpc.
+        Telescope KN detection horizon, in Mpc.
+    sigma : float
+        Log-normal scale of the merger-rate posterior for this class.
+    quantiles : tuple of float
+        Credible-interval quantiles to evaluate (default: 5/50/95%).
+
+    Returns
+    -------
+    dict
+        ``f_hor`` (fraction of the catalogue within the horizon), ``mean``
+        (lambda * f_hor), and ``lo``/``mid``/``hi`` (the requested
+        quantiles, floored/rounded/ceiled to integers).
+    """
+    distance_true_mpc = np.asarray(distance_true_mpc)
+    if len(distance_true_mpc) == 0:
+        f_hor = 0.0
+    else:
+        f_hor = float(np.mean(distance_true_mpc < d_max_mpc))
+
+    if f_hor <= 0 or lam <= 0:
+        return dict(f_hor=f_hor, mean=0.0, lo=0, mid=0, hi=0)
+
+    mu_kn = np.log(lam) + np.log(f_hor)
+    lo, mid, hi = poisson_lognormal_rate_quantiles(list(quantiles), mu_kn, sigma)
+    return dict(
+        f_hor=f_hor,
+        mean=lam * f_hor,
+        lo=int(np.floor(lo)),
+        mid=int(np.round(mid)),
+        hi=int(np.ceil(hi)),
+    )
+
+
+def sample_kn_counts(lam, f_hor, sigma, n_realizations=100_000, seed=42):
+    """
+    Draw samples from the same Poisson-lognormal model used by
+    :func:`kn_expected`, for the cumulative-histogram figure in
+    :func:`plot_results`. This is a visualization aid only: the reported
+    quantiles come from the closed-form calculation in ``kn_expected``, not
+    from these samples.
+
+    Parameters
+    ----------
+    lam : float
+        Expected number of GW detections for this class and run.
+    f_hor : float
+        Fraction of the detected catalogue within the telescope's horizon.
+    sigma : float
+        Log-normal scale of the merger-rate posterior for this class.
     n_realizations : int
-        Number of Monte-Carlo draws (default: 100 000).
+        Number of samples to draw (default: 100 000).
     seed : int
         Random seed for reproducibility.
 
     Returns
     -------
-    list of int
-        Number of KN-detectable events for each realization.
+    numpy.ndarray of int
     """
     rng = np.random.default_rng(seed)
-    distances = allsky_df["distmean"].to_numpy()
-    return [
-        int(np.sum(rng.choice(distances, N_events) < d_max_mpc))
-        for _ in range(n_realizations)
-    ]
+    if f_hor <= 0 or lam <= 0:
+        return np.zeros(n_realizations, dtype=int)
+    mu_kn = np.log(lam) + np.log(f_hor)
+    rate_draws = rng.lognormal(mean=mu_kn, sigma=sigma, size=n_realizations)
+    return rng.poisson(rate_draws)
 
 
 # ---------------------------------------------------------------------------
@@ -146,9 +386,8 @@ def run_analysis(
     datapath=RUNS_DIR,
     run_names=("IR1HL", "IR1HLV"),
     model="fullpop",
-    Number_BNS=None,
-    Number_NSBH=None,
-    ns_max_mass=3.0,
+    run_durations=None,
+    ns_max_mass=NS_MAX_MASS,
     Mabs=-16,
     mlim=22,
     n_realizations=100_000,
@@ -158,6 +397,13 @@ def run_analysis(
 ):
     """
     Run the full KN detectability analysis for one or several GW network runs.
+
+    For each run and source class, the expected number of GW detections is
+    lambda = R_i * V_s * T_obs, computed live from the run's own simulated
+    catalogue (R_i from data/derived/rate_summary.csv split by mass
+    fraction, V_s from the number of detected events over the simulated
+    injection rate, T_obs from ``run_durations``). The expected number of
+    KN-accessible events is then lambda * f_hor (see :func:`kn_expected`).
 
     Parameters
     ----------
@@ -170,13 +416,11 @@ def run_analysis(
     model : str
         Population model subfolder to read from each run, ``'fullpop'`` or
         ``'pixelpop'`` (default: ``'fullpop'``).
-    Number_BNS : dict
-        Expected number of detected BNS events per run, keyed by run name,
-        e.g. ``{'IR1HL': 0, 'IR1HLV': 1}``. Defaults to the verified FullPop
-        rate_mid values in scripts/outputs/detection_rates_results.csv
-        (built by scripts/notebooks/detection_rate.ipynb) if not given.
-    Number_NSBH : dict
-        Expected number of detected NSBH events per run, same convention.
+    run_durations : dict
+        Observing duration in years per run, e.g. ``{'IR1HL': 0.5}``.
+        Defaults to six months (0.5 yr) for every run in ``run_names``: IR1
+        is a planned campaign with no calendar history to derive a duration
+        from, unlike O4a/O4b.
     ns_max_mass : float
         Maximum NS mass in solar masses (default: 3.0).
     Mabs : float
@@ -184,7 +428,7 @@ def run_analysis(
     mlim : float
         Telescope limiting magnitude (default: 22, ZTF).
     n_realizations : int
-        Monte-Carlo realizations (default: 100 000).
+        Monte-Carlo draws used only for the histogram figure (default: 100 000).
     seed : int
         Random seed (default: 42).
     telescope_name: str
@@ -196,18 +440,11 @@ def run_analysis(
     -------
     dict
         Nested dictionary keyed by run name, then ``'BNS'`` / ``'NSBH'``,
-        containing the list of realization counts and summary statistics.
+        containing the expected counts, credible interval, and sampled
+        realizations (for plotting) for each.
     """
-    # Defaults are the FullPop rate_mid detection counts over IR1's 6-month
-    # forecast duration (data/runs/IR1HL, IR1HLV; see
-    # scripts/outputs/detection_rates_results.csv). Not the paper's actual
-    # rates if `model="pixelpop"` is requested -- pass Number_BNS/NSBH
-    # explicitly in that case, the PixelPop counts differ (IR1HL: 0, 0;
-    # IR1HLV: 0, 1).
-    if Number_BNS is None:
-        Number_BNS = {"IR1HL": 0, "IR1HLV": 1}
-    if Number_NSBH is None:
-        Number_NSBH = {"IR1HL": 0, "IR1HLV": 1}
+    if run_durations is None:
+        run_durations = {run_name: 0.5 for run_name in run_names}
 
     d_max = telescope_distance_limit(Mabs=Mabs, mlim=mlim)
 
@@ -215,39 +452,54 @@ def run_analysis(
         print(f"{telescope_name} KN detection horizon : {d_max:.1f} Mpc")
         print(f"  (m_lim={mlim}, M_abs={Mabs})\n")
 
+    rates_table = rates_table_for_model(model, ns_max_mass=ns_max_mass)
+
     results = {}
 
     for run_name in run_names:
-        path = Path(datapath) / run_name / model
-        allsky = Table.read(str(path / "allsky.dat"), format="ascii.fast_tab")
-        injections = Table.read(str(path / "injections.dat"), format="ascii.fast_tab")
-
-        BNS_mask = populations_bool(injections, "BNS", ns_max_mass=ns_max_mass)
-        NSBH_mask = populations_bool(injections, "NSBH", ns_max_mass=ns_max_mass)
-
-        allsky_BNS = allsky[BNS_mask].to_pandas()
-        allsky_NSBH = allsky[NSBH_mask].to_pandas()
-
-        real_BNS = run_realizations(
-            allsky_BNS, Number_BNS[run_name], d_max, n_realizations, seed
+        catalog, rate_sim_gpc = load_run_catalog(
+            run_name, model, datapath=datapath, ns_max_mass=ns_max_mass
         )
-        real_NSBH = run_realizations(
-            allsky_NSBH, Number_NSBH[run_name], d_max, n_realizations, seed
-        )
+        t_obs = run_durations[run_name]
 
-        def stats(r):
-            return {
-                "realizations": r,
-                "mean": float(np.mean(r)),
-                "median": float(np.percentile(r, 50)),
-                "p5": float(np.percentile(r, 5)),
-                "p95": float(np.percentile(r, 95)),
+        run_results = {}
+        # BBH is skipped: a kilonova is only expected from a merger with at
+        # least one neutron star.
+        for pop in ["BNS", "NSBH"]:
+            (rate_row,) = rates_table[rates_table["population"] == pop]
+            n_detected = catalog[pop]["n_detected"]
+            # rate_row["mid"] is the *class-scaled* rate (combined rate x
+            # mass_fraction). The simulated injection rate must be scaled
+            # the same way before dividing, or mass_fraction ends up
+            # applied twice on one side of the product and not at all on
+            # the other.
+            rate_sim_scaled = rate_sim_gpc * float(rate_row["mass_fraction"])
+            sensitive_volume_gpc3 = n_detected / rate_sim_scaled
+            lam = float(rate_row["mid"]) * sensitive_volume_gpc3 * t_obs
+
+            expected = kn_expected(
+                catalog[pop]["distance_true"],
+                lam,
+                d_max,
+                float(rate_row["sigma"]),
+            )
+            realizations = sample_kn_counts(
+                lam, expected["f_hor"], float(rate_row["sigma"]), n_realizations, seed
+            )
+
+            run_results[pop] = {
+                "lam": lam,
+                "f_hor": expected["f_hor"],
+                "mean": expected["mean"],
+                "median": float(expected["mid"]),
+                "p5": float(expected["lo"]),
+                "p95": float(expected["hi"]),
+                "realizations": realizations,
             }
 
-        results[run_name] = {"BNS": stats(real_BNS), "NSBH": stats(real_NSBH)}
-
+        results[run_name] = run_results
         if verbose:
-            _print_summary(run_name, results[run_name])
+            _print_summary(run_name, run_results)
 
     return results, d_max
 
@@ -262,7 +514,7 @@ def _print_summary(run_name, run_results):
         lo = s["median"] - s["p5"]
         hi = s["p95"] - s["median"]
         print(f"  {pop}")
-        print(f"    Mean   : {s['mean']:.1f}")
+        print(f"    Expected GW x horizon fraction (lambda*f_hor) : {s['mean']:.2f}")
         print(f"    Median : {s['median']:.0f}  (+{hi:.0f} / -{lo:.0f})  [90% CI]")
     print()
 
@@ -427,9 +679,8 @@ COMMON = dict(
     datapath=RUNS_DIR,
     run_names=["IR1HL", "IR1HLV"],
     model="fullpop",
-    Number_BNS={"IR1HL": 0, "IR1HLV": 1},
-    Number_NSBH={"IR1HL": 0, "IR1HLV": 1},
-    ns_max_mass=3.0,
+    run_durations={"IR1HL": 0.5, "IR1HLV": 0.5},
+    ns_max_mass=NS_MAX_MASS,
     n_realizations=100_000,
     seed=42,
     verbose=True,

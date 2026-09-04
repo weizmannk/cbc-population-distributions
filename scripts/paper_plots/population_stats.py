@@ -195,6 +195,23 @@ run_names = run_dirs = [
 # palette. This broader list feeds only the data-loading loop below;
 # run_names keeps driving every figure unchanged.
 stats_run_names = stats_run_dirs = ["O4a", "O4b"] + run_names
+
+# Real calendar duration per run, in years -- needed for the "Annual number
+# of detections" row in summary.rst below. Without this, that row silently
+# reports an annualized rate (as if the run lasted a full year) for every
+# run that didn't actually run for a full year, which for IR1 (6 months)
+# and O4a/O4b overstates the expected count by roughly 2x and 1.2-1.5x
+# respectively. O5 is unaffected either way (T_obs = 1).
+# O4a/O4b GPS ranges match detection_rate.ipynb's runs_gps (GWOSC
+# detector-status pages), so both scripts derive the same duration from the
+# same source instead of two independently hard-coded numbers.
+_o4_gps = {
+    "O4a": (1368975618, 1389456018),
+    "O4b": (1396796418, 1422118818),
+}
+run_durations = {run: (t1 - t0) / 86400 / 365.25 for run, (t0, t1) in _o4_gps.items()}
+run_durations.update({"IR1HL": 0.5, "IR1HLV": 0.5, "O5a": 1.0, "O5b": 1.0, "O5c": 1.0})
+
 pops = ["BNS", "NSBH", "BBH"]  # Populations
 classification_names = pops
 classification_colors = seaborn.color_palette(n_colors=len(classification_names))
@@ -717,6 +734,23 @@ for model_name, rates_table in [
             "+===========+===========+===============+===============+===============+",
             file=f_rst,
         )
+        # Only the "rate" row below depends on run_durations (every other
+        # row is duration-independent), but the duration itself doesn't
+        # appear anywhere else in this table -- without this note a reader
+        # has no way to tell that the IR1 numbers assume 0.5 yr while O5
+        # assumes 1 yr. IR1HL/IR1HLV share one value and O5a/O5b/O5c share
+        # another, so those are grouped for width; the asserts make sure a
+        # future change that breaks that grouping fails loudly instead of
+        # silently printing a wrong label.
+        assert run_durations["IR1HL"] == run_durations["IR1HLV"]
+        assert run_durations["O5a"] == run_durations["O5b"] == run_durations["O5c"]
+        _durations_note = "T_obs (yr): O4a={:.2f}, O4b={:.2f}, IR1HL/HLV={:.2f}, O5a/b/c={:.2f}".format(
+            run_durations["O4a"],
+            run_durations["O4b"],
+            run_durations["IR1HL"],
+            run_durations["O5a"],
+        )
+
         for fieldname, fieldlabel in zip(
             fieldnames + ["volume", "rate", "merger_rate_density"],
             fieldlabels
@@ -727,6 +761,12 @@ for model_name, rates_table in [
             ],
         ):
             print("| {:69s} |".format(fieldlabel), file=f_rst)
+            if fieldname == "rate":
+                print(
+                    "+-----------+-----------+---------------+---------------+---------------+",
+                    file=f_rst,
+                )
+                print("| {:69s} |".format(_durations_note), file=f_rst)
             print("<table>", file=f)
             print("<caption>", fieldlabel, "</caption>", file=f)
             print("<thead>", file=f)
@@ -747,7 +787,11 @@ for model_name, rates_table in [
                     nsamples = table.meta["nsamples"]
                     fiducial_log_rate = fiducial_log_rates[ipop]
                     fiducial_log_rate_err = fiducial_log_rate_errs[ipop]
-                    mu = fiducial_log_rate + np.log(len(table) / rate)
+                    mu = (
+                        fiducial_log_rate
+                        + np.log(run_durations[run])
+                        + np.log(len(table) / rate)
+                    )
                     sigma = fiducial_log_rate_err
 
                     quantiles = [0.05, 0.5, 0.95]
