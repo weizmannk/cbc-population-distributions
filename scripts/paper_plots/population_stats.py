@@ -756,7 +756,11 @@ for model_name, rates_table in [
             fieldlabels
             + [
                 "Sensitive volume (Gpc$^3$)",
-                "Annual number of detections",
+                # Not "Annual": each run's T_obs is now applied (see
+                # run_durations above), so this is the expected count over
+                # that run's own real duration, not annualized -- O4a/O4b
+                # and IR1 last well under a year.
+                "Expected number of detections",
                 "Merger rate density (Gpc$^{-3}$ yr$^{-1}$)",
             ],
         ):
@@ -891,11 +895,21 @@ for model_name, rates_table in [
                 lambda _: stats.percentileofscore(_["area(90)"], 20),
             ],
             [
-                "Percentage of events with vol(90) <= 1e3 Mpc3",
+                # vol(90) is already scaled to units of 1e6 Mpc^3 (see the
+                # "table[colname] *= 1e-6" conversion above), so 1e4 Mpc^3
+                # is threshold 0.01 in this column, not 1e4 itself.
+                "Percentage of events with vol(90) <= 1e4 Mpc3",
+                lambda _: stats.percentileofscore(_["vol(90)"], 0.01),
+            ],
+            [
+                # Same column, threshold of 1 in scaled units is 1e6
+                # Mpc^3, not 1e3 -- the label previously understated this
+                # by a factor of 1000.
+                "Percentage of events with vol(90) <= 1e6 Mpc3",
                 lambda _: stats.percentileofscore(_["vol(90)"], 1),
             ],
             [
-                "Percentage of events with vol(90) <= 1e4 Mpc3",
+                "Percentage of events with vol(90) <= 1e7 Mpc3",
                 lambda _: stats.percentileofscore(_["vol(90)"], 10),
             ],
         ]:
