@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 #
 # Astropy documentation build configuration file.
@@ -32,13 +31,13 @@ import sys
 sys.path.insert(0, os.path.abspath(".."))
 import tomllib
 
-# from sphinx_gallery.sorting import FileNameSortKey  # noqa: F401
+# from sphinx_gallery.sorting import FileNameSortKey
 
 sys.path.insert(0, os.path.abspath("_pybtex_style"))
 import short_alpha  # noqa: F401
 
 try:
-    from sphinx_astropy.conf.v2 import *  # noqa
+    from sphinx_astropy.conf.v2 import *
 except ImportError:
     print(
         "ERROR: the documentation requires the sphinx-astropy package to be installed"
@@ -61,7 +60,7 @@ highlight_language = "python3"
 # Add only those extensions that are NOT already included in sphinx_astropy.conf.v2
 
 try:
-    extensions  # noqa: F405
+    extensions
 except NameError:
     extensions = [
         "sphinx.ext.autodoc",  # Automatic documentation for Python objects (functions, classes, etc.)
@@ -155,7 +154,7 @@ thebe_config = {
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-exclude_patterns.append("_templates")  # noqa: F405
+exclude_patterns.append("_templates")
 # docs/notebooks is a symlink to scripts/notebooks; only the notebooks
 # wired into guide/quick_analysis.rst's toctree are meant to be built as
 # doc pages, so keep the rest (not yet reviewed for publication) out of
@@ -171,14 +170,14 @@ exclude_patterns += [
 # rst_epilog = r"""
 # .. |cbc-population-distributions| replace:: *cbc-population-distributions*
 # .. |M4OPT| replace:: M\ :sup:`4`\ OPT
-# """  # noqa: F405
+# """
 
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
 project = project_metadata["name"]
 author = project_metadata["authors"][0]["name"]
-copyright = "{0}, {1}".format(datetime.datetime.now().year, author)
+copyright = f"{datetime.datetime.now().year}, {author}"
 
 
 # -- Options for HTML output --------------------------------------------------
@@ -195,7 +194,7 @@ htmlhelp_basename = project + "doc"
 # Prefixes that are ignored for sorting the Python module index
 modindex_common_prefix = ["cbc-population-distributions."]
 
-html_theme_options.update(  # noqa: F405
+html_theme_options.update(
     {
         "github_url": "https://github.com/weizmannk/cbc-population-distributions",
         "use_edit_page_button": True,
@@ -239,7 +238,7 @@ edit_on_github_doc_root = "docs"
 # edit_on_github_url = f"https://github.com/{edit_on_github_project}/edit/{edit_on_github_branch}/"  # Link to GitHub editor
 
 # -- Resolving issue number to links in changelog -----------------------------
-github_issues_url = "https://github.com/{0}/issues/".format(edit_on_github_project)
+github_issues_url = f"https://github.com/{edit_on_github_project}/issues/"
 
 # -- Options for linkcheck output -------------------------------------------
 # Ignore issue/PR links; set retries/timeouts for external link checking
@@ -252,7 +251,7 @@ linkcheck_anchors = False
 
 
 # -- Options for intersphinx --------------------------------------------------
-intersphinx_mapping.update(  # noqa: F405
+intersphinx_mapping.update(
     {
         "gwpopulation": ("https://colmtalbot.github.io/gwpopulation/", None),
         "astropy": ("https://docs.astropy.org/en/stable/", None),
