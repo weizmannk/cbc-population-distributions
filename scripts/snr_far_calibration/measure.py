@@ -12,10 +12,13 @@ come from the GWOSC segments.
 
 Outputs, in outputs/:
     rho_eq.csv       rho_eq per run, class and bin, with its bootstrap error
+    rho_eq_network.csv  the same per observing network, pooled where fewer than
+                     MIN_FOUND injections are found in a network
     variants.csv     rho_eq of the reference bins for subsets and settings:
                      each search, each network, other FAR thresholds, month,
                      dominant detector, chirp mass, redshift, noise model
-    histograms.csv   found and missed injections per SNR interval (reference bins)
+    histograms.csv   found and missed injections per SNR interval (reference
+                     bins, or every bin with --all-histograms)
 """
 
 import argparse
@@ -29,15 +32,20 @@ import sensitivity
 from config import (
     CHIRP_MASS_EDGES,
     CLASSES,
-    DUTY_CYCLES,
     FAR_THRESHOLD,
     INJECTIONS,
     OUT_DIR,
     REFERENCE_BINS,
-    RUN_DETECTORS,
     RUNS,
+    provenance,
 )
-from threshold import NOISE_DRAWS, bootstrap_error, equivalent_threshold, network_snr
+from threshold import (
+    NOISE_DRAWS,
+    PEAK_OFFSET,
+    bootstrap_error,
+    equivalent_threshold,
+    network_snr,
+)
 
 MAX_PER_BIN = 400_000  # above the largest bin: every injection is used
 MIN_FOUND = 30
@@ -80,16 +88,6 @@ def to_reference(inj, run, directory):
     return inj
 
 
-def duty_cycle_state(run, n, rng):
-    networks = list(DUTY_CYCLES[run])
-    weights = np.array(list(DUTY_CYCLES[run].values()))
-    pick = rng.choice(len(networks), (n, NOISE_DRAWS), p=weights / weights.sum())
-    return {
-        ifo: np.isin(pick, [k for k, net in enumerate(networks) if ifo in net])
-        for ifo in RUN_DETECTORS[run]
-    }
-
-
 def subsets(inj, state):
     """(group, name, mask) of the subsets of one bin used to test the result."""
     net = segments.network(state)
@@ -98,6 +96,11 @@ def subsets(inj, state):
     month = months(inj.gps)
     for name in np.unique(month):
         yield "month", name, month == name
+    # Months restricted to the time when both LIGO detectors observe, so that a
+    # fit of rho_eq against the range is not diluted by the single-detector time.
+    coincident_hl = state["H1"] & state["L1"]
+    for name in np.unique(month[coincident_hl]):
+        yield "month HL", name, coincident_hl & (month == name)
     coincident = np.isin(net, ["H1L1", "H1L1V1"])
     louder = inj.optimal_snr["H1"] > inj.optimal_snr["L1"]
     yield "dominant", "H1", coincident & louder
@@ -151,10 +154,36 @@ def variants(inj, state, snr, found, run, far, rng):
         network_snr(inj.optimal_snr, state, rng, offset=0.0),
         found,
     )
-    if run in DUTY_CYCLES:
-        drawn = duty_cycle_state(run, len(inj), rng)
-        add("noise", "duty cycle", network_snr(inj.optimal_snr, drawn, rng), found)
     return out
+
+
+def network_thresholds(state, snr, found, rng, rho, error):
+    """rho_eq per observing network of one bin, pooled where too few are found."""
+    net = segments.network(state)
+    rows = []
+    for name in sorted(set(net)):
+        mask = net == name
+        n_found = int(found[mask].sum())
+        pooled = n_found < MIN_FOUND
+        value, err = (
+            (rho, error)
+            if pooled
+            else (
+                equivalent_threshold(snr[mask], found[mask]),
+                bootstrap_error(snr[mask], found[mask], rng),
+            )
+        )
+        rows.append(
+            dict(
+                network=name,
+                n_injections=int(mask.sum()),
+                n_found=n_found,
+                rho_eq=round(value, 3),
+                error=round(err, 3),
+                pooled=int(pooled),
+            )
+        )
+    return rows
 
 
 def histogram(snr, found):
@@ -165,9 +194,23 @@ def histogram(snr, found):
     return n_found, n_missed
 
 
-def write(rows, name):
+def histogram_row(run, cls, lo, k, found, missed):
+    return dict(
+        run=run,
+        source_class=cls,
+        chirp_mass_min=lo,
+        snr_min=round(HISTOGRAM_EDGES[k], 4),
+        snr_max=round(HISTOGRAM_EDGES[k + 1], 4),
+        found=round(found, 3),
+        missed=round(missed, 3),
+    )
+
+
+def write(rows, name, units):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUT_DIR / name, "w", newline="") as f:
+        for line in provenance(units):
+            f.write(f"# {line}\n")
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
@@ -183,6 +226,17 @@ def main():
     parser.add_argument("--far", type=float, default=FAR_THRESHOLD)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
+        "--peak-offset",
+        type=float,
+        default=PEAK_OFFSET,
+        help="peak-search excess added to each detector SNR [default: %(default)s]",
+    )
+    parser.add_argument(
+        "--all-histograms",
+        action="store_true",
+        help="write histograms.csv for every bin, not only the reference bins",
+    )
+    parser.add_argument(
         "--reference",
         type=Path,
         default=None,
@@ -191,8 +245,25 @@ def main():
     )
     args = parser.parse_args()
 
-    rng = np.random.default_rng(args.seed)
-    results, variant_rows, histogram_rows = [], [], []
+    # The two tables have the same columns, so each one states its units and
+    # neither can be written where the other belongs.
+    default_out = Path(__file__).resolve().parent / "outputs"
+    if args.reference:
+        units = f"optimal SNRs scaled to o4b_{{h1,l1,v1}}_ref.txt of {args.reference}"
+        if OUT_DIR == default_out:
+            parser.error(
+                "--reference results would overwrite the release table; "
+                "set SNRFAR_OUT to another directory"
+            )
+    else:
+        units = "optimal SNRs of the release, monthly reference PSDs"
+        if "reference" in OUT_DIR.name:
+            parser.error(
+                f"release results would land in {OUT_DIR.name}; "
+                "set SNRFAR_OUT to a directory without 'reference' in its name"
+            )
+
+    results, variant_rows, histogram_rows, network_rows = [], [], [], []
     print(f"{'run':4} {'class':5} {'Mc_det':>9} {'found':>13} {'rho_eq':>13}")
 
     for run in args.runs:
@@ -206,8 +277,16 @@ def main():
         inj = inj.subset(inside)
         state = {ifo: on[inside] for ifo, on in state.items()}
 
-        for cls in CLASSES:
-            for lo, hi in zip(CHIRP_MASS_EDGES[:-1], CHIRP_MASS_EDGES[1:]):
+        for class_index, cls in enumerate(CLASSES):
+            for bin_index, (lo, hi) in enumerate(
+                zip(CHIRP_MASS_EDGES[:-1], CHIRP_MASS_EDGES[1:])
+            ):
+                # One noise stream per bin, so that a bin does not depend on
+                # what was measured before it. RUNS.index keeps a run's
+                # thresholds the same whether --runs holds one run or all.
+                rng = np.random.default_rng(
+                    [args.seed, RUNS.index(run), class_index, bin_index]
+                )
                 index = np.flatnonzero(
                     (inj.source_class == cls)
                     & (inj.chirp_mass_det >= lo)
@@ -221,7 +300,9 @@ def main():
                 if found.sum() < MIN_FOUND:
                     continue
 
-                snr = network_snr(sub.optimal_snr, sub_state, rng)
+                snr = network_snr(
+                    sub.optimal_snr, sub_state, rng, offset=args.peak_offset
+                )
                 rho = equivalent_threshold(snr, found)
                 n_found = int(found.sum())
                 share = NOISE_DRAWS * n_found
@@ -248,6 +329,24 @@ def main():
                     f"{rho:6.2f} ± {results[-1]['error']:.2f}"
                 )
 
+                bin_columns = dict(
+                    run=run,
+                    source_class=cls,
+                    chirp_mass_min=lo,
+                    chirp_mass_max=hi,
+                )
+                network_rows.extend(
+                    bin_columns | row
+                    for row in network_thresholds(
+                        sub_state, snr, found, rng, rho, results[-1]["error"]
+                    )
+                )
+                if args.all_histograms and (cls, lo, hi) not in REFERENCE_BINS:
+                    histogram_rows.extend(
+                        histogram_row(run, cls, lo, k, a, b)
+                        for k, (a, b) in enumerate(zip(*histogram(snr, found)))
+                    )
+
                 if (cls, lo, hi) not in REFERENCE_BINS:
                     continue
                 for (group, name), (value, count) in variants(
@@ -265,22 +364,15 @@ def main():
                             n_found=count,
                         )
                     )
-                for k, (a, b) in enumerate(zip(*histogram(snr, found))):
-                    histogram_rows.append(
-                        dict(
-                            run=run,
-                            source_class=cls,
-                            chirp_mass_min=lo,
-                            snr_min=round(HISTOGRAM_EDGES[k], 4),
-                            snr_max=round(HISTOGRAM_EDGES[k + 1], 4),
-                            found=round(a, 3),
-                            missed=round(b, 3),
-                        )
-                    )
+                histogram_rows.extend(
+                    histogram_row(run, cls, lo, k, a, b)
+                    for k, (a, b) in enumerate(zip(*histogram(snr, found)))
+                )
 
-    write(results, "rho_eq.csv")
-    write(variant_rows, "variants.csv")
-    write(histogram_rows, "histograms.csv")
+    write(results, "rho_eq.csv", units)
+    write(network_rows, "rho_eq_network.csv", units)
+    write(variant_rows, "variants.csv", units)
+    write(histogram_rows, "histograms.csv", units)
 
 
 if __name__ == "__main__":

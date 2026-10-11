@@ -17,6 +17,7 @@ class Injections:
     source_class: np.ndarray  # 'BNS', 'NSBH' or 'BBH'
     masses: np.ndarray  # source-frame component masses, (n, 2), heavier first
     optimal_snr: dict  # {ifo: optimal SNR with the release PSD}
+    release_on: dict  # {ifo: the release gives an SNR, so it observed}
     far: dict  # {search column: FAR [1/yr]}
     gps: np.ndarray
 
@@ -29,6 +30,7 @@ class Injections:
             self.source_class[index],
             self.masses[index],
             {k: v[index] for k, v in self.optimal_snr.items()},
+            {k: v[index] for k, v in self.release_on.items()},
             {k: v[index] for k, v in self.far.items()},
             self.gps[index],
         )
@@ -69,10 +71,12 @@ def load(path, run, max_mass=BH_MAX_MASS):
         }
         if not far:
             raise KeyError(f"no search results for {run} in {path}")
-        snr = {
-            ifo: np.nan_to_num(column(f"estimated_optimal_snr_{ifo[0]}"))
-            for ifo in RUN_DETECTORS[run]
+        raw = {
+            ifo: column(f"estimated_optimal_snr_{ifo[0]}") for ifo in RUN_DETECTORS[run]
         }
+        # The release leaves the SNR undefined where a detector did not observe.
+        release_on = {ifo: np.isfinite(v) for ifo, v in raw.items()}
+        snr = {ifo: np.nan_to_num(v) for ifo, v in raw.items()}
 
     source_chirp_mass = (m1 * m2) ** 0.6 / (m1 + m2) ** 0.2
     inj = Injections(
@@ -80,6 +84,7 @@ def load(path, run, max_mass=BH_MAX_MASS):
         source_class=classify(m1, m2),
         masses=np.column_stack([np.maximum(m1, m2), np.minimum(m1, m2)]),
         optimal_snr=snr,
+        release_on=release_on,
         far=far,
         gps=gps[rows],
     )

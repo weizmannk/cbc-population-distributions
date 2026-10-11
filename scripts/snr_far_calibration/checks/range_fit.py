@@ -9,10 +9,10 @@ scaled by sqrt(n_found / n_found of the month). When the fit is poor
 
     python checks/range_fit.py                       # O4a, BBH 20-35
     python checks/range_fit.py --run O4b --source-class NSBH --chirp-mass-min 2.2
+    python checks/range_fit.py --hl-only             # months, HL coincident time only
 """
 
 import argparse
-import csv
 import sys
 from pathlib import Path
 
@@ -20,12 +20,11 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import sensitivity  # noqa: E402
-from config import OUT_DIR  # noqa: E402
+from config import OUT_DIR, read_csv  # noqa: E402
 
 
 def read(name):
-    with open(OUT_DIR / name) as f:
-        return list(csv.DictReader(f))
+    return read_csv(OUT_DIR / name)
 
 
 def main():
@@ -35,7 +34,13 @@ def main():
     parser.add_argument("--run", default="O4a")
     parser.add_argument("--source-class", default="BBH")
     parser.add_argument("--chirp-mass-min", type=float, default=20.0)
+    parser.add_argument(
+        "--hl-only",
+        action="store_true",
+        help="fit the months measured on HL coincident time only",
+    )
     args = parser.parse_args()
+    group = "month HL" if args.hl_only else "month"
 
     def same_bin(row):
         return (
@@ -51,7 +56,7 @@ def main():
     rows = []
     for r in read("variants.csv"):
         month = r["variant"].replace("-", "_")
-        if not (same_bin(r) and r["group"] == "month"):
+        if not (same_bin(r) and r["group"] == group):
             continue
         if ("H1", month) not in ranges or ("L1", month) not in ranges:
             continue
@@ -60,7 +65,7 @@ def main():
         rows.append((r["variant"], hl, float(r["rho_eq"]), int(r["n_found"]), sigma))
 
     print(
-        f"{args.run} {args.source_class} {args.chirp_mass_min:g}: "
+        f'{args.run} {args.source_class} {args.chirp_mass_min:g}, group "{group}": '
         f"full bin rho_eq = {float(full['rho_eq']):.3f} +- {error:.3f} ({n_found} found)\n"
     )
     print(f"{'month':8} {'R_HL [Mpc]':>11} {'rho_eq':>7} {'found':>7} {'sigma':>6}")

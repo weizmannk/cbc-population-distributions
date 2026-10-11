@@ -21,7 +21,7 @@ bin in O4. `measure.py` loops over the runs, classes and bins, and for each one:
    (`threshold.network_snr`): in each detector observing at the injection time
    (GWOSC segments, `segments.observing`), `|rho_opt + n| + 0.1` with `n` a unit
    complex Gaussian, the detector counted only above SNR 1, summed in
-   quadrature, over eight noise realizations per injection;
+   quadrature, over sixteen noise realizations per injection;
 3. `rho_eq` is the SNR above which the fraction of simulated values equals the
    found fraction (`threshold.equivalent_threshold`). Equivalently, the found
    injections below `rho_eq` are as many as the missed injections above it.
@@ -31,6 +31,11 @@ drawn from cancels and no population weights are needed. Bins with fewer than 30
 found injections are skipped. A bin is subsampled above 400 000 injections, a
 cap no bin reaches. The error on `rho_eq` is the standard deviation over 200
 bootstrap resamples of the injections.
+
+Each bin draws its noise from its own stream, seeded by the run, the class and
+the bin index. A bin therefore gives the same threshold whether `--runs` holds
+one run or all of them, and adding a variant or a check leaves every published
+threshold where it was.
 
 The optimal SNRs are those of the injection release. With `--reference`, they
 are rescaled by the ratio of BNS ranges to the `o4b_*_ref.txt` curves of the
@@ -81,6 +86,22 @@ Requirements: numpy, h5py, matplotlib; gwosc for the segments.
 reference curves to `outputs/reference/`, and packs `outputs/` with the log
 `run_all.log` into `results.zip`.
 
+## Which table to use
+
+Two tables carry `rho_eq` with the same columns, and the first line of each one
+names the PSDs its SNRs are expressed with.
+
+| Table | SNRs | Where it belongs |
+|---|---|---|
+| `outputs/rho_eq.csv` | optimal SNRs of the release, monthly PSDs | the measurement itself, as published in Table 2 of LIGO-P2600188 |
+| `outputs/reference/rho_eq.csv` | the same scaled to `o4b_*_ref.txt` | applied to simulations computed with those curves: O4a, O4b, and IR1 with the O4b rows (Table 4 and the IR1 forecasts) |
+
+A simulated SNR is never compared with the release table: the simulations are
+computed with the reference curves, and a threshold has to be in the units of
+the quantity it cuts. `measure.py` refuses to write reference results into
+`outputs/` and release results into a directory whose name contains
+`reference`.
+
 ## Files
 
 | File | Role |
@@ -97,6 +118,7 @@ reference curves to `outputs/reference/`, and packs `outputs/` with the log
 | `checks/binning.py` | `rho_eq` in half bins and in bins shifted by half a width |
 | `checks/noise_model.py` | measures the peak-search excess, `PEAK_OFFSET` (needs ligo.skymap) |
 | `checks/range_fit.py` | fits `rho_eq` against the monthly BNS range within a run |
+| `CHECKS.md` | every check and the numbers it produced, and the open points |
 
 ## Variants
 
@@ -114,7 +136,7 @@ networks are absent.
 | dominant | H1- or L1-dominated injections (HL time) |
 | chirp mass | terciles of the bin (signal duration) |
 | redshift | terciles of the bin |
-| noise | sixteen draws instead of eight, no peak offset, detectors drawn from the duty cycles |
+| noise | thirty-two draws instead of sixteen, no peak offset, detectors drawn from the duty cycles |
 
 ## Where the thresholds are used
 

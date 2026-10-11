@@ -15,6 +15,9 @@ LOG=$OUT/run_all.log
 mkdir -p "$OUT"
 : > "$LOG"
 
+# Injection release and repository commit, as written at the top of every CSV.
+python -c "import config; print('\n'.join(config.provenance()))" | tee -a "$LOG"
+
 step() {
     echo -e "\n===== $* =====" | tee -a "$LOG"
     "$@" 2>&1 | tee -a "$LOG"
@@ -27,18 +30,23 @@ step python figure.py
 step python checks/coverage.py
 step python checks/closure.py
 step python checks/binning.py
+step python checks/low_snr_found.py
+step python checks/range_fit.py
+step python checks/range_fit.py --hl-only
 
 skip() {
     echo -e "\n===== skipped: $* =====" | tee -a "$LOG"
 }
 
 if ls "$DATA"/asd/o4b_*_ref.txt > /dev/null 2>&1; then
-    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b --reference "$DATA/asd"
+    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b \
+        --reference "$DATA/asd" --all-histograms
 else
     skip "reference curves, no $DATA/asd/o4b_*_ref.txt"
 fi
 
-# O4a and O4b share the L1 curve of the simulations; H1 and V1 differ.
+# O4a and O4b share the H1 and L1 curves of the simulations; only V1 differs,
+# being absent from O4a.
 for check in "O4a L1" "O4b H1" "O4b V1"; do
     set -- $check
     if [ ! -f "$DATA/runs/$1/psds.xml" ]; then

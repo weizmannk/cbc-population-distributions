@@ -8,7 +8,7 @@ only above SINGLE_DETECTOR_MIN, and the network SNR is the quadrature sum.
 
 import numpy as np
 
-NOISE_DRAWS = 8  # 8, 16 and 64 give the same rho_eq to 0.01
+NOISE_DRAWS = 16  # 8, 16 and 64 give the same rho_eq to 0.01
 PEAK_OFFSET = 0.1  # measured with checks/noise_model.py
 SINGLE_DETECTOR_MIN = 1.0  # bayestar-realize-coincs --snr-threshold
 BOOTSTRAP = 200  # resamples of the injections; error known to ~5%

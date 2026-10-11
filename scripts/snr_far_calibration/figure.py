@@ -11,11 +11,9 @@
     network, against the ratio of the network BNS ranges.
 """
 
-import csv
-
 import matplotlib.pyplot as plt
 import numpy as np
-from config import CURRENT_THRESHOLD, OUT_DIR, REFERENCE_BINS, TABLE_BINS
+from config import CURRENT_THRESHOLD, OUT_DIR, REFERENCE_BINS, TABLE_BINS, read_csv
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.ticker import FixedLocator, NullFormatter, NullLocator
@@ -59,8 +57,7 @@ plt.rcParams.update(
 
 
 def read(name):
-    with open(OUT_DIR / name) as f:
-        rows = list(csv.DictReader(f))
+    rows = read_csv(OUT_DIR / name)
     for row in rows:
         for key, value in row.items():
             try:

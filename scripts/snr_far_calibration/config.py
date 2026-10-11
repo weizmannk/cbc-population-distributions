@@ -4,7 +4,11 @@ Each value is taken from a data release, a catalogue paper or the
 observing-scenarios pipeline, as noted next to it.
 """
 
+import csv
 import os
+import shlex
+import subprocess
+import sys
 from pathlib import Path
 
 REPO = Path(os.environ.get("CBCPOP_REPO", Path(__file__).resolve().parents[2]))
@@ -40,22 +44,6 @@ RUN_DETECTORS = {
     "O4b": ("H1", "L1", "V1"),
 }
 RUNS = tuple(RUN_GPS)
-
-# Fraction of calendar time per detector network (GWOSC). Used only for the
-# duty-cycle variant; the measurement itself reads the segments.
-# O4a: arXiv:2508.18079, Table 1. O4b: arXiv:2605.27090, Table 2.
-DUTY_CYCLES = {
-    "O4a": {("H1", "L1"): 0.5335, ("H1",): 0.1407, ("L1",): 0.1561},
-    "O4b": {
-        ("H1", "L1", "V1"): 0.311,
-        ("H1", "L1"): 0.074,
-        ("H1", "V1"): 0.075,
-        ("L1", "V1"): 0.219,
-        ("H1",): 0.027,
-        ("L1",): 0.078,
-        ("V1",): 0.103,
-    },
-}
 
 # A detection is a FAR below 1/yr, as in the GWTC catalogues.
 FAR_THRESHOLD = 1.0
@@ -114,3 +102,33 @@ TABLE_BINS = (
 
 # One well-populated bin per class, used for the variants and the figure.
 REFERENCE_BINS = (("BNS", 1.12, 1.4), ("NSBH", 2.2, 4.0), ("BBH", 20.0, 35.0))
+
+
+# Provenance written at the top of every output CSV and in run_all.log.
+INJECTIONS_DOI = "10.5281/zenodo.19500052"
+
+
+def provenance(units=None):
+    """Comment lines for an output CSV, or for the run log when units is None.
+
+    ``units`` names the PSDs the SNRs are expressed with, so that two tables of
+    the same shape cannot be mistaken for one another.
+    """
+    commit = subprocess.run(
+        ["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    lines = [
+        f"injections: {INJECTIONS.name}, doi:{INJECTIONS_DOI}",
+        f"commit: {commit or 'unknown'}",
+    ]
+    if units is None:
+        return lines
+    return [f"SNRs: {units}", f"command: {shlex.join(sys.argv)}"] + lines
+
+
+def read_csv(path):
+    """Rows of a CSV written here, skipping the provenance comment lines."""
+    with open(path) as f:
+        return list(csv.DictReader(line for line in f if not line.startswith("#")))

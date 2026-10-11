@@ -1,3 +1,7 @@
+# SNRs: BNS ranges of the release reference PSDs
+# command: python sensitivity.py
+# injections: mixture-semi_o1_o2-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf, doi:10.5281/zenodo.19500052
+# commit: bb36b41
 run,ifo,range_mean,range_min,range_max,n_psd
 O3a,H1,107.3,107.3,107.3,1
 O3a,L1,129.9,129.9,129.9,1
