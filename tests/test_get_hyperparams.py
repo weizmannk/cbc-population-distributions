@@ -124,13 +124,16 @@ def test_download_from_dcc_downloads_and_moves(tmp_path):
     cached = tmp_path / "cached.hdf5"
     cached.write_bytes(b"dcc content")
 
-    with patch(
-        "urllib.request.urlopen", return_value=_fake_head_response(len(b"dcc content"))
-    ):
-        with patch.object(
+    with (
+        patch(
+            "urllib.request.urlopen",
+            return_value=_fake_head_response(len(b"dcc content")),
+        ),
+        patch.object(
             get_hyperparams, "download_file", return_value=str(cached)
-        ) as mock_download:
-            result = get_hyperparams.download_from_dcc("baseline5_result.hdf5", dest)
+        ) as mock_download,
+    ):
+        result = get_hyperparams.download_from_dcc("baseline5_result.hdf5", dest)
 
     mock_download.assert_called_once()
     called_url = mock_download.call_args[0][0]
