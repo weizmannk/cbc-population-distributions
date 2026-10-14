@@ -2,13 +2,14 @@
 
 In each run, class and chirp-mass bin, rho_eq is the simulated network SNR
 above which the same injections are kept as often as the searches found them.
-SNRs are those of the injection release or, with --reference, those of the
-reference curves of the simulations. The observing detectors of each injection
-come from the GWOSC segments.
+SNRs are the optimal SNRs of the injection release or, with --snr-scale, those
+the simulations would compute for the noise curves of that table (snr_scale.py).
+The observing detectors of each injection come from the GWOSC segments.
 
     python segments.py                          # once
     python measure.py                           # release SNRs
-    python measure.py --reference ../../data/asd    # SNRs of the o4b_*_ref.txt curves
+    SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b \\
+        --snr-scale outputs/snr_scale.csv       # SNRs of the simulations
 
 Outputs, in outputs/:
     rho_eq.csv       rho_eq per run, class and bin, with its bootstrap error
@@ -28,7 +29,8 @@ from pathlib import Path
 import injections
 import numpy as np
 import segments
-import sensitivity
+import snr_scale
+import threshold
 from config import (
     CHIRP_MASS_EDGES,
     CLASSES,
@@ -40,7 +42,6 @@ from config import (
     provenance,
 )
 from threshold import (
-    NOISE_DRAWS,
     PEAK_OFFSET,
     bootstrap_error,
     equivalent_threshold,
@@ -62,28 +63,34 @@ def months(gps):
     )
 
 
-def to_reference(inj, run, directory):
-    """Optimal SNRs for the reference curves of the simulations (O4 runs only).
+def rescale(inj, run, path):
+    """Optimal SNRs the simulations would compute, from a table of snr_scale.py.
 
-    For a given source the SNR is proportional to the range of the PSD, so the
-    SNR of each detector is multiplied by range(reference curve) / range(release
-    PSD of the injection's month). This acts on the optimal SNR, before the
-    noise is added. The O4b curves are used for O4a too, so that every O4
-    threshold refers to the sensitivity assumed by the simulations. The O3
-    release PSD is already typical of the run.
+    Each detector's SNR is multiplied by the factor of its month and of the
+    detector-frame masses of the injection, before the noise is added. A month
+    without a release PSD for a detector takes the nearest month that has one.
     """
-    if run.startswith("O3"):
-        return inj
-    release = sensitivity.month_ranges()
-    month = np.char.replace(months(inj.gps), "-", "_")
+    table = snr_scale.read(path)
+    month = (
+        np.full(len(inj), "O3")
+        if run.startswith("O3")
+        else np.char.replace(months(inj.gps), "-", "_")
+    )
+    total_mass = inj.masses.sum(axis=1) * (1 + inj.redshift)
+    mass_ratio = inj.masses[:, 1] / inj.masses[:, 0]
     for ifo, snr in inj.optimal_snr.items():
-        reference = sensitivity.reference_range(
-            directory / f"o4b_{ifo.lower()}_ref.txt"
-        )
-        fallback = np.mean(
-            [r for (d, m), r in release.items() if d == ifo and m != "O3"]
-        )
-        factor = np.array([reference / release.get((ifo, m), fallback) for m in month])
+        available = sorted(m for r, d, m in table if (r, d) == (run, ifo))
+        if not available:
+            raise ValueError(f"{path} has no factor for {run} {ifo}")
+        factor = np.empty(len(inj))
+        for m in np.unique(month):
+            use = m if m in available else snr_scale.nearest(m, available)
+            if use != m:
+                print(f"{run} {ifo} {m}: no release PSD, factor of {use}")
+            selected = month == m
+            factor[selected] = table[run, ifo, use](
+                total_mass[selected], mass_ratio[selected]
+            )
         inj.optimal_snr[ifo] = snr * factor
     return inj
 
@@ -112,13 +119,9 @@ def subsets(inj, state):
             inj.chirp_mass_det <= terciles[k + 1]
         )
         yield "chirp mass", name, inside
-    # Redshift from the detector- and source-frame chirp masses. Within a bin of
-    # detector-frame chirp mass the signal seen by the search is the same at
-    # every redshift; distance enters only through the SNR.
-    source_chirp = (inj.masses[:, 0] * inj.masses[:, 1]) ** 0.6 / inj.masses.sum(
-        1
-    ) ** 0.2
-    z = inj.chirp_mass_det / source_chirp - 1
+    # Within a bin of detector-frame chirp mass the signal seen by the search is
+    # the same at every redshift; distance enters only through the SNR.
+    z = inj.redshift
     terciles = np.quantile(z, [0, 1 / 3, 2 / 3, 1])
     for k in range(3):
         name = f"{terciles[k]:.3f}-{terciles[k + 1]:.3f}"
@@ -144,8 +147,8 @@ def variants(inj, state, snr, found, run, far, rng):
         add(group, name, snr[mask], found[mask])
     add(
         "noise",
-        f"{2 * NOISE_DRAWS} draws",
-        network_snr(inj.optimal_snr, state, rng, draws=2 * NOISE_DRAWS),
+        f"{2 * threshold.NOISE_DRAWS} draws",
+        network_snr(inj.optimal_snr, state, rng, draws=2 * threshold.NOISE_DRAWS),
         found,
     )
     add(
@@ -226,6 +229,18 @@ def main():
     parser.add_argument("--far", type=float, default=FAR_THRESHOLD)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
+        "--noise-draws",
+        type=int,
+        default=threshold.NOISE_DRAWS,
+        help="noise realizations per injection [default: %(default)s]",
+    )
+    parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=threshold.BOOTSTRAP,
+        help="resamples for the error on rho_eq [default: %(default)s]",
+    )
+    parser.add_argument(
         "--peak-offset",
         type=float,
         default=PEAK_OFFSET,
@@ -237,22 +252,31 @@ def main():
         help="write histograms.csv for every bin, not only the reference bins",
     )
     parser.add_argument(
-        "--reference",
+        "--snr-scale",
         type=Path,
-        default=None,
-        help="directory with o4b_{h1,l1,v1}_ref.txt (ASD): express the SNRs "
-        "for these curves instead of the release PSDs",
+        help="table of snr_scale.py: measure on the SNRs the simulations would "
+        "compute for its noise curves, instead of the release SNRs",
     )
     args = parser.parse_args()
+
+    # The paper's values are the defaults; lowering them gives a quick run,
+    # and the command line is written at the top of every output file.
+    threshold.NOISE_DRAWS = args.noise_draws
+    threshold.BOOTSTRAP = args.bootstrap
 
     # The two tables have the same columns, so each one states its units and
     # neither can be written where the other belongs.
     default_out = Path(__file__).resolve().parent / "outputs"
-    if args.reference:
-        units = f"optimal SNRs scaled to o4b_{{h1,l1,v1}}_ref.txt of {args.reference}"
+    if args.snr_scale:
+        target = snr_scale.header(args.snr_scale, "target")
+        templates = snr_scale.header(args.snr_scale, "simulations")
+        units = (
+            f"optimal SNRs of the simulations ({templates}) for {target}, "
+            f"converted with {args.snr_scale}"
+        )
         if OUT_DIR == default_out:
             parser.error(
-                "--reference results would overwrite the release table; "
+                "--snr-scale results would overwrite the release table; "
                 "set SNRFAR_OUT to another directory"
             )
     else:
@@ -268,8 +292,8 @@ def main():
 
     for run in args.runs:
         inj = injections.load(args.injections, run)
-        if args.reference:
-            inj = to_reference(inj, run, args.reference)
+        if args.snr_scale:
+            inj = rescale(inj, run, args.snr_scale)
         state = segments.observing(inj.gps, run)
         inside = np.any(list(state.values()), axis=0)
         if not inside.all():
@@ -305,7 +329,7 @@ def main():
                 )
                 rho = equivalent_threshold(snr, found)
                 n_found = int(found.sum())
-                share = NOISE_DRAWS * n_found
+                share = threshold.NOISE_DRAWS * n_found
                 results.append(
                     dict(
                         run=run,

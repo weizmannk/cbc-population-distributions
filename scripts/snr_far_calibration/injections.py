@@ -16,6 +16,7 @@ class Injections:
     chirp_mass_det: np.ndarray  # detector frame [Msun]
     source_class: np.ndarray  # 'BNS', 'NSBH' or 'BBH'
     masses: np.ndarray  # source-frame component masses, (n, 2), heavier first
+    redshift: np.ndarray
     optimal_snr: dict  # {ifo: optimal SNR with the release PSD}
     release_on: dict  # {ifo: the release gives an SNR, so it observed}
     far: dict  # {search column: FAR [1/yr]}
@@ -29,6 +30,7 @@ class Injections:
             self.chirp_mass_det[index],
             self.source_class[index],
             self.masses[index],
+            self.redshift[index],
             {k: v[index] for k, v in self.optimal_snr.items()},
             {k: v[index] for k, v in self.release_on.items()},
             {k: v[index] for k, v in self.far.items()},
@@ -83,6 +85,7 @@ def load(path, run, max_mass=BH_MAX_MASS):
         chirp_mass_det=(1 + z) * source_chirp_mass,
         source_class=classify(m1, m2),
         masses=np.column_stack([np.maximum(m1, m2), np.minimum(m1, m2)]),
+        redshift=z,
         optimal_snr=snr,
         release_on=release_on,
         far=far,

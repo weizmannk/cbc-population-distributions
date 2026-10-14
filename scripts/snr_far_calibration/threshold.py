@@ -11,15 +11,21 @@ import numpy as np
 NOISE_DRAWS = 16  # 8, 16 and 64 give the same rho_eq to 0.01
 PEAK_OFFSET = 0.1  # measured with checks/noise_model.py
 SINGLE_DETECTOR_MIN = 1.0  # bayestar-realize-coincs --snr-threshold
-BOOTSTRAP = 200  # resamples of the injections; error known to ~5%
+BOOTSTRAP = 20000  # resamples of the injections; error known to ~0.5%
 
 
-def network_snr(optimal_snr, state, rng, draws=NOISE_DRAWS, offset=PEAK_OFFSET):
+def network_snr(optimal_snr, state, rng, draws=None, offset=None):
     """Observed network SNR, shape (injections, draws).
 
     ``state`` maps each detector to a boolean array, of shape (injections,)
-    or (injections, draws), True where the detector was observing.
+    or (injections, draws), True where the detector was observing. ``draws``
+    and ``offset`` fall back to NOISE_DRAWS and PEAK_OFFSET, read here rather
+    than bound at import, so that measure.py can lower them for a quick run.
     """
+    if draws is None:
+        draws = NOISE_DRAWS
+    if offset is None:
+        offset = PEAK_OFFSET
     n = len(next(iter(optimal_snr.values())))
     power = np.zeros((n, draws))
     for ifo, rho in optimal_snr.items():
@@ -40,7 +46,10 @@ def equivalent_threshold(snr, found):
     return float(np.quantile(snr, 1.0 - found.mean()))
 
 
-def bootstrap_error(snr, found, rng, resamples=BOOTSTRAP):
+def bootstrap_error(snr, found, rng, resamples=None):
+    """Standard deviation of rho_eq over resamples of the injections."""
+    if resamples is None:
+        resamples = BOOTSTRAP
     estimates = []
     for _ in range(resamples):
         i = rng.integers(0, len(found), len(found))

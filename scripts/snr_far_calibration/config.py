@@ -30,6 +30,18 @@ INJECTIONS = (
 RELEASE_PSDS = REPO / "data" / "psds-o1234ab"
 SEGMENTS = REPO / "data" / "segments"
 
+# How the two kinds of optimal SNR are computed, for snr_scale.py. The release
+# uses IMRPhenomXPHM between 16 and 2048 Hz with the PSD of the injection's
+# month (Essick et al. 2025, Sec. V and App. A). The simulations use the
+# defaults of bayestar-inject and bayestar-realize-coincs: the o2-uberbank
+# templates (TaylorF2 below 4 Msun total mass, SEOBNRv4_ROM above) from 25 Hz,
+# up to 2048 Hz.
+RELEASE_WAVEFORM = "IMRPhenomXPHM"
+RELEASE_F_LOW = 16.0
+SIMULATION_WAVEFORM = "o2-uberbank"
+SIMULATION_F_LOW = 25.0
+F_HIGH = 2048.0
+
 # GPS boundaries [start, end) of the runs, as in the injection release.
 RUN_GPS = {
     "O3a": (1238166018, 1253977218),
@@ -47,7 +59,7 @@ RUNS = tuple(RUN_GPS)
 
 # A detection is a FAR below 1/yr, as in the GWTC catalogues.
 FAR_THRESHOLD = 1.0
-# Threshold of the observing-scenarios simulations (bayestar-realize-coincs).
+# SNR threshold of the observing-scenarios simulations (bayestar-realize-coincs).
 CURRENT_THRESHOLD = 8.0
 
 # Source classes from source-frame component masses. The NS/BH boundary is

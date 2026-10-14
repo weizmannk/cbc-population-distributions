@@ -116,16 +116,46 @@ three noise variants. rho_eq falls monotonically as the cut is loosened
 of `rho_eq.csv`, the rest being the tails outside the 4-32 range of
 `HISTOGRAM_EDGES`. Status: OK.
 
-## Step 6 — reference curves
+## Step 6 — SNRs of the simulations
 
-`SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b --reference ../../data/asd`.
+`python snr_scale.py --runs O4a O4b -o outputs/snr_scale.csv --H1 ... --L1 ...
+--V1 ...` with the `o4b_*_ref.txt` curves, then
+`SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b --snr-scale
+outputs/snr_scale.csv`. This replaces the earlier `--reference`, which scaled
+every SNR by the ratio of BNS ranges whatever the masses, and ignored the
+templates and the 16 against 25 Hz cutoffs of the release and the simulations.
 
-The conversion acts on the optimal SNR, before the noise, checked by tracing the
-array handed to `network_snr`: the largest O4b optimal SNR goes from 608.3 to
-538.1 in H1, a factor 0.885 against the range ratio 0.888. The reference curves
-reproduce the published O4b sensitivities (H1 160.9, L1 171.1, V1 53.0 Mpc
-against 160 / 170 / 53). rho_eq drops by the same factor, e.g. BBH 20-35 in O4b
-from 9.98 to 8.94 (0.896). Status: OK.
+Checked without the injection file:
+
+- the norm of `snr_scale.sigma` is that of bayestar: a TaylorF2 1.4 + 1.4 Msun
+  template from 10 Hz on `o4b_l1_ref.txt` gives a horizon at SNR 8 of
+  385.9 Mpc, against 387.3 Mpc = 2.264 x the BNS range of `sensitivity.py`;
+- IMRPhenomXPHM and IMRPhenomD agree to 0.2% (1.4 + 1.4 Msun) and 3%
+  (30 + 30 Msun) on the same PSD, so the face-on XPHM template carries the
+  normalisation of the dominant mode;
+- the o2-uberbank templates switch from TaylorF2 to SEOBNRv4_ROM at 4 Msun of
+  detector-frame total mass, exactly as in `bayestar-realize-coincs`; with
+  IMRPhenomD standing in above the switch, the SNR drops by 3.7% across it,
+  and the grid has points at 3.999 and 4.001 Msun so that the factor keeps
+  that step;
+- the factor interpolated on the grid matches the factor computed for the
+  exact masses to 0.5% at worst (median 0.01%) over 60 random sources from 2.2
+  to 400 Msun;
+- `measure.py --snr-scale` on synthetic injections found by a step in
+  0.87 x the release SNR moves rho_eq from 10.65 to 9.3, the found labels
+  unchanged, and refuses to write into `outputs/`.
+
+With IMRPhenomD standing in for the o2-uberbank templates, whose SEOBNRv4_ROM
+part needs the LAL data file, the O4b factors are 0.85 to 0.93 for a
+1.4 + 1.4 Msun source and 0.82 to 0.91 for 30 + 30 Msun, depending on the
+detector and the month. Month by month they are below the BNS range ratio used
+before by 1 to 2% for BNS, 3 to 5% at 60 Msun of total mass and up to 7% at
+120 Msun: the release integrates from 16 Hz, the simulations from 25 Hz, and
+the heavier the source the more of its SNR lies in between.
+
+`checks/release_snr.py` needs the mixture-real file of the release, which has
+the sky positions; on synthetic face-on injections built with the release
+templates it returns 1.001 to 1.010.
 
 ## Step 7 — closure and binning
 
@@ -297,11 +327,10 @@ the real search response. Status: open.
    variation of rho_eq inside a bin in O4, but the significant gradients are in
    the BBH bins (16 sigma in O4a BBH 20-35, 7-8 sigma in O3 BBH 60-120), which
    are not halved.
-4. **`--reference` applies `o4b_*_ref.txt` to O4a as well**, although
-   `o4a_h1_ref.txt` and `o4a_l1_ref.txt` exist (152.9 and 173.0 Mpc against
-   160.9 and 171.1 for O4b). Deliberate if the point is to express every
-   threshold for the sensitivity the simulations assume, but the docstring does
-   not say so.
+4. **The O4a thresholds of `outputs/reference/` use the O4b curves**, because
+   the O4a simulations do. `o4a_h1_ref.txt` and `o4a_l1_ref.txt` (152.9 and
+   173.0 Mpc) are the curves to give `snr_scale.py` for thresholds that
+   represent the O4a searches on the sensitivity of the O4a data.
 5. **O4b starts two days after the official start** (GPS 1396969218 against
    1396796418), which is the release boundary, not an error: no injection lies
    in those two days. It does make the O4b window 291.1 d against the 293.1 d
@@ -313,8 +342,8 @@ the real search response. Status: open.
    budgets now lives in section 7.2 of `detection_rate.ipynb`, against the
    segments rather than against renormalised duty cycles.
 7. **The release has no V1 PSD for 2024_04**, so the O4b Virgo range averages
-   nine months, and an April 2024 injection falls back to the mean of the other
-   months in `to_reference`.
+   nine months, and `measure.py --snr-scale` gives an April 2024 injection the
+   Virgo factor of May 2024.
 8. **The 100 Msun cut removes 59 389 found injections.** It follows the FullPop
    range, but it is a large fraction of the found BBH and it drives the whole
    change in the 120-300 Msun bin.

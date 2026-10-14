@@ -4,7 +4,9 @@
 #   bash run_all.sh
 #
 # Optional steps run only when their inputs exist:
-#   ../../data/asd/o4b_*_ref.txt          thresholds for the reference curves
+#   ../../data/asd/o4b_*_ref.txt          thresholds for the O4b reference curves
+#                                         (needs LAL_DATA_PATH for the templates)
+#   ../../data/injections/mixture-real_*  check of the release SNRs
 #   ../../data/runs/O4{a,b}/psds.xml      noise-model check (needs LAL_DATA_PATH)
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -38,11 +40,23 @@ skip() {
     echo -e "\n===== skipped: $* =====" | tee -a "$LOG"
 }
 
-if ls "$DATA"/asd/o4b_*_ref.txt > /dev/null 2>&1; then
-    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b \
-        --reference "$DATA/asd" --all-histograms
-else
+if ! ls "$DATA"/asd/o4b_*_ref.txt > /dev/null 2>&1; then
     skip "reference curves, no $DATA/asd/o4b_*_ref.txt"
+elif [ -z "${LAL_DATA_PATH:-}" ]; then
+    skip "reference curves, LAL_DATA_PATH not set"
+else
+    step python snr_scale.py --runs O4a O4b -o "$OUT/snr_scale.csv" \
+        --H1 "$DATA/asd/o4b_h1_ref.txt" \
+        --L1 "$DATA/asd/o4b_l1_ref.txt" \
+        --V1 "$DATA/asd/o4b_v1_ref.txt"
+    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b \
+        --snr-scale "$OUT/snr_scale.csv" --all-histograms
+fi
+
+if ls "$DATA"/injections/mixture-real_*.hdf > /dev/null 2>&1; then
+    step python checks/release_snr.py --runs O4a O4b
+else
+    skip "release SNRs, no $DATA/injections/mixture-real_*.hdf"
 fi
 
 # O4a and O4b share the H1 and L1 curves of the simulations; only V1 differs,
