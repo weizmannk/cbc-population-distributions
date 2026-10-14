@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Run every step and check, and pack the outputs into results.zip.
+#
+#   bash run_all.sh
+#
+# Optional steps run only when their inputs exist:
+#   ../../data/asd/o4b_*_ref.txt          thresholds for the O4b reference curves
+#                                         (needs LAL_DATA_PATH for the templates)
+#   ../../data/injections/mixture-real_*  check of the release SNRs
+#   ../../data/runs/O4{a,b}/psds.xml      noise-model check (needs LAL_DATA_PATH)
+set -uo pipefail
+cd "$(dirname "$0")"
+
+DATA=../../data
+OUT=outputs
+LOG=$OUT/run_all.log
+mkdir -p "$OUT"
+: > "$LOG"
+
+# Injection release and repository commit, as written at the top of every CSV.
+python -c "import config; print('\n'.join(config.provenance()))" | tee -a "$LOG"
+
+step() {
+    echo -e "\n===== $* =====" | tee -a "$LOG"
+    "$@" 2>&1 | tee -a "$LOG"
+}
+
+step python segments.py
+step python measure.py
+step python sensitivity.py
+step python figure.py
+step python checks/coverage.py
+step python checks/closure.py
+step python checks/binning.py
+step python checks/low_snr_found.py
+step python checks/range_fit.py
+step python checks/range_fit.py --hl-only
+
+skip() {
+    echo -e "\n===== skipped: $* =====" | tee -a "$LOG"
+}
+
+if ! ls "$DATA"/asd/o4b_*_ref.txt > /dev/null 2>&1; then
+    skip "reference curves, no $DATA/asd/o4b_*_ref.txt"
+elif [ -z "${LAL_DATA_PATH:-}" ]; then
+    skip "reference curves, LAL_DATA_PATH not set"
+else
+    step python snr_scale.py --runs O4a O4b -o "$OUT/snr_scale.csv" \
+        --H1 "$DATA/asd/o4b_h1_ref.txt" \
+        --L1 "$DATA/asd/o4b_l1_ref.txt" \
+        --V1 "$DATA/asd/o4b_v1_ref.txt"
+    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b \
+        --snr-scale "$OUT/snr_scale.csv" --all-histograms
+fi
+
+if ls "$DATA"/injections/mixture-real_*.hdf > /dev/null 2>&1; then
+    step python checks/release_snr.py --runs O4a O4b
+else
+    skip "release SNRs, no $DATA/injections/mixture-real_*.hdf"
+fi
+
+# O4a and O4b share the H1 and L1 curves of the simulations; only V1 differs,
+# being absent from O4a.
+for check in "O4a L1" "O4b H1" "O4b V1"; do
+    set -- $check
+    if [ ! -f "$DATA/runs/$1/psds.xml" ]; then
+        skip "noise model $1 $2, no $DATA/runs/$1/psds.xml"
+    elif [ -z "${LAL_DATA_PATH:-}" ]; then
+        skip "noise model $1 $2, LAL_DATA_PATH not set"
+    else
+        step python checks/noise_model.py "$DATA/runs/$1/psds.xml" --detector "$2"
+    fi
+done
+
+rm -f results.zip
+zip -qr results.zip "$OUT"
+echo -e "\nSend results.zip ($(du -h results.zip | cut -f1))." | tee -a "$LOG"
