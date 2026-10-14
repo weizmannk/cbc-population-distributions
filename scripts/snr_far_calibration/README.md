@@ -87,24 +87,23 @@ the run they are measured on; a new simulation needs nothing.
 | `injections/mixture-semi_o1_o2-...-clipped.hdf` | GWTC-5.0 sensitivity injections, doi:10.5281/zenodo.19500052, 1.1 GB |
 | `psds-o1234ab/` | reference PSDs of that release, for its optimal SNRs, 25 MB packed |
 | `segments/` | GWOSC observing segments, written by `segments.py` |
+| `injections/mixture-real_o3_o4a_o4b-...-clipped.hdf` | the same injections with their sky positions, needed only by `checks/release_snr.py` |
 | `asd/o4b_*_ref.txt` | O4b reference curves, needed only by `snr_scale.py` |
 
-To download them, from `data/` at the repository root:
+To download them, with the two injection files of the release and the waveform
+data file of the o2-uberbank templates:
 
 ```
-mkdir -p injections && cd injections
-curl -OL https://zenodo.org/records/19500052/files/mixture-semi_o1_o2-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf
-cd .. && curl -OL https://zenodo.org/records/19500052/files/psds-o1234ab.tar.gz && tar -xf psds-o1234ab.tar.gz
-mkdir -p asd && cd asd
-curl -OL https://dcc.ligo.org/T2500363-v1/public/o4b_h1_ref.txt
-curl -OL https://dcc.ligo.org/T2500363-v1/public/o4b_l1_ref.txt
-curl -OL https://dcc.ligo.org/T2500388-v1/public/o4b_v1_ref.txt
+bash download.sh
 ```
 
-Then `python segments.py` writes `data/segments/`. The injection file holds the
-O1 and O2 semi-analytic injections as well; the runs measured here come from its
-GPS boundaries, so the smaller `mixture-real_o3_o4a_o4b-...` file of the same
-record works too, after pointing `config.INJECTIONS` at it.
+It skips the files already present, and writes the waveform data file to
+`$LAL_DATA_PATH`, or to `~/lalsuite-waveform-data` when that variable is not
+set. Then `python segments.py` writes `data/segments/`.
+
+The mixture-semi file holds the O1 and O2 semi-analytic injections as well; the
+runs measured here come from its GPS boundaries, so the smaller mixture-real
+file of the same record works too, after pointing `config.INJECTIONS` at it.
 
 `CBCPOP_REPO` sets the repository root and `SNRFAR_OUT` the output directory.
 
@@ -151,6 +150,7 @@ whose name contains `reference`.
 
 | File | Role |
 |---|---|
+| `download.sh` | downloads the data into `data/` |
 | `config.py` | paths, runs, bins, constants and their sources |
 | `injections.py` | reads one run of the injection file |
 | `segments.py` | GWOSC segments and observing detectors |

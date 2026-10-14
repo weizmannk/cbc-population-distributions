@@ -59,7 +59,7 @@ RUNS = tuple(RUN_GPS)
 
 # A detection is a FAR below 1/yr, as in the GWTC catalogues.
 FAR_THRESHOLD = 1.0
-# SNR threshold of the observing-scenarios simulations (bayestar-realize-coincs).
+# Threshold of the observing-scenarios simulations (bayestar-realize-coincs).
 CURRENT_THRESHOLD = 8.0
 
 # Source classes from source-frame component masses. The NS/BH boundary is
