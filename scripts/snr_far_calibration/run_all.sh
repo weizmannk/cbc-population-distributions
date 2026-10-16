@@ -49,7 +49,7 @@ else
         --H1 "$DATA/asd/o4b_h1_ref.txt" \
         --L1 "$DATA/asd/o4b_l1_ref.txt" \
         --V1 "$DATA/asd/o4b_v1_ref.txt"
-    SNRFAR_OUT=$OUT/reference step python measure.py --runs O4a O4b \
+    step python measure.py --runs O4a O4b \
         --snr-scale "$OUT/snr_scale.csv" --all-histograms
 fi
 

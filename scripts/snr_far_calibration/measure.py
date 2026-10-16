@@ -8,18 +8,21 @@ The observing detectors of each injection come from the GWOSC segments.
 
     python segments.py                          # once
     python measure.py                           # release SNRs
-    SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b \\
+    python measure.py --runs O4a O4b \\
         --snr-scale outputs/snr_scale.csv       # SNRs of the simulations
 
-Outputs, in outputs/:
-    rho_eq.csv       rho_eq per run, class and bin, with its bootstrap error
-    rho_eq_network.csv  the same per observing network, pooled where fewer than
-                     MIN_FOUND injections are found in a network
-    variants.csv     rho_eq of the reference bins for subsets and settings:
+Outputs, in outputs/. Every name ends in _release or _simulations after the
+SNRs it was measured on, so the two tables never share a name and can sit
+side by side; the first header line of each file repeats which is which.
+
+    rho_eq_<kind>.csv   rho_eq per run, class and bin, with its bootstrap error
+    rho_eq_network_<kind>.csv  the same per observing network, pooled where
+                     fewer than MIN_FOUND injections are found in a network
+    variants_<kind>.csv  rho_eq of the reference bins for subsets and settings:
                      each search, each network, other FAR thresholds, month,
                      dominant detector, chirp mass, redshift, noise model
-    histograms.csv   found and missed injections per SNR interval (reference
-                     bins, or every bin with --all-histograms)
+    histograms_<kind>.csv  found and missed injections per SNR interval
+                     (reference bins, or every bin with --all-histograms)
 """
 
 import argparse
@@ -264,9 +267,8 @@ def main():
     threshold.NOISE_DRAWS = args.noise_draws
     threshold.BOOTSTRAP = args.bootstrap
 
-    # The two tables have the same columns, so each one states its units and
-    # neither can be written where the other belongs.
-    default_out = Path(__file__).resolve().parent / "outputs"
+    # The two tables have the same columns, so each one states its units in
+    # its first header line and carries them in its name.
     if args.snr_scale:
         target = snr_scale.header(args.snr_scale, "target")
         templates = snr_scale.header(args.snr_scale, "simulations")
@@ -274,18 +276,10 @@ def main():
             f"optimal SNRs of the simulations ({templates}) for {target}, "
             f"converted with {args.snr_scale}"
         )
-        if OUT_DIR == default_out:
-            parser.error(
-                "--snr-scale results would overwrite the release table; "
-                "set SNRFAR_OUT to another directory"
-            )
+        kind = "simulations"
     else:
         units = "optimal SNRs of the release, monthly reference PSDs"
-        if "reference" in OUT_DIR.name:
-            parser.error(
-                f"release results would land in {OUT_DIR.name}; "
-                "set SNRFAR_OUT to a directory without 'reference' in its name"
-            )
+        kind = "release"
 
     results, variant_rows, histogram_rows, network_rows = [], [], [], []
     print(f"{'run':4} {'class':5} {'Mc_det':>9} {'found':>13} {'rho_eq':>13}")
@@ -393,10 +387,10 @@ def main():
                     for k, (a, b) in enumerate(zip(*histogram(snr, found)))
                 )
 
-    write(results, "rho_eq.csv", units)
-    write(network_rows, "rho_eq_network.csv", units)
-    write(variant_rows, "variants.csv", units)
-    write(histogram_rows, "histograms.csv", units)
+    write(results, f"rho_eq_{kind}.csv", units)
+    write(network_rows, f"rho_eq_network_{kind}.csv", units)
+    write(variant_rows, f"variants_{kind}.csv", units)
+    write(histogram_rows, f"histograms_{kind}.csv", units)
 
 
 if __name__ == "__main__":

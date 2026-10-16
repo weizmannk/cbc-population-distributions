@@ -111,7 +111,7 @@ file of the same record works too, after pointing `config.INJECTIONS` at it.
 
 ```
 python segments.py        # once, needs gwosc
-python measure.py         # outputs/rho_eq.csv, variants.csv, histograms.csv
+python measure.py         # outputs/rho_eq_release.csv and the other _release tables
 python sensitivity.py     # outputs/release_ranges.csv
 python figure.py          # outputs/snr_threshold.pdf
 
@@ -119,7 +119,7 @@ python snr_scale.py --runs O4a O4b -o outputs/snr_scale.csv \
     --H1 ../../data/asd/o4b_h1_ref.txt \
     --L1 ../../data/asd/o4b_l1_ref.txt \
     --V1 ../../data/asd/o4b_v1_ref.txt
-SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b \
+python measure.py --runs O4a O4b \
     --snr-scale outputs/snr_scale.csv
 ```
 
@@ -128,7 +128,7 @@ ligo.skymap for `snr_scale.py`, with `SEOBNRv4ROM_v3.0.hdf5` in
 `LAL_DATA_PATH` for the templates above 4 Msun.
 
 `bash run_all.sh` runs every step and check, writes the thresholds of the
-reference curves to `outputs/reference/`, and packs `outputs/` with the log
+reference curves to the `_simulations` tables, and packs `outputs/` with the log
 `run_all.log` into `results.zip`.
 
 ## Which table to use
@@ -138,8 +138,8 @@ names the PSDs its SNRs are expressed with.
 
 | Table | SNRs | Where it belongs |
 |---|---|---|
-| `outputs/rho_eq.csv` | optimal SNRs of the release, monthly PSDs | the measurement itself, as published in Table 2 of LIGO-P2600188 |
-| `outputs/reference/rho_eq.csv` | SNRs of the simulations for `o4b_*_ref.txt`, through `outputs/snr_scale.csv` | applied to the simulations: O4a and O4b with their own rows, IR1 and later runs with the O4b rows (Table 4 and the IR1 forecasts) |
+| `outputs/rho_eq_release.csv` | optimal SNRs of the release, monthly PSDs | the measurement itself, as published in Table 2 of LIGO-P2600188 |
+| `outputs/rho_eq_simulations.csv` | SNRs of the simulations for `o4b_*_ref.txt`, through `outputs/snr_scale.csv` | applied to the simulations: O4a and O4b with their own rows, IR1 and later runs with the O4b rows (Table 4 and the IR1 forecasts) |
 
 A simulated SNR is never compared with the release table: a threshold has to be
 computed the same way as the quantity it cuts. `measure.py` refuses to write
@@ -169,7 +169,7 @@ whose name contains `reference`.
 
 ## Variants
 
-`variants.csv` repeats the measurement for the reference bins (BNS 1.12–1.4,
+`variants_release.csv` repeats the measurement for the reference bins (BNS 1.12–1.4,
 NSBH 2.2–4, BBH 20–35 Msun) on subsets and with other settings. A variant is
 written only where at least 30 injections were found, so the sparse bins and
 networks are absent.
@@ -187,10 +187,10 @@ networks are absent.
 
 ## Where the thresholds are used
 
-`outputs/reference/rho_eq.csv`, written by
+`outputs/rho_eq_simulations.csv`, written by
 
 ```
-SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b \
+python measure.py --runs O4a O4b \
     --snr-scale outputs/snr_scale.csv
 ```
 
