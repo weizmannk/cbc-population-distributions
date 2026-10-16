@@ -1,7 +1,7 @@
 # SNRs: optimal SNRs of the release, monthly reference PSDs
 # command: measure.py
 # injections: mixture-semi_o1_o2-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf, doi:10.5281/zenodo.19500052
-# commit: 1095cf4
+# commit: c997922
 run,source_class,chirp_mass_min,snr_min,snr_max,found,missed
 O3a,BNS,1.12,4.0,4.1892,0.25,0.5
 O3a,BNS,1.12,4.1892,4.3873,0.25,1.188

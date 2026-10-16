@@ -1,7 +1,7 @@
 # SNRs: optimal SNRs of the release, monthly reference PSDs
 # command: measure.py
 # injections: mixture-semi_o1_o2-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf, doi:10.5281/zenodo.19500052
-# commit: 1095cf4
+# commit: c997922
 run,source_class,chirp_mass_min,chirp_mass_max,group,variant,rho_eq,n_found
 O3a,BNS,1.12,1.4,search,GstLAL,10.629,3923
 O3a,BNS,1.12,1.4,search,MBTA,9.964,4565
@@ -35,8 +35,8 @@ O3a,BNS,1.12,1.4,chirp mass,1.34-1.40,9.19,1742
 O3a,BNS,1.12,1.4,redshift,0.002-0.027,9.692,2169
 O3a,BNS,1.12,1.4,redshift,0.027-0.042,9.361,1837
 O3a,BNS,1.12,1.4,redshift,0.042-0.103,8.972,1330
-O3a,BNS,1.12,1.4,noise,32 draws,9.231,5336
-O3a,BNS,1.12,1.4,noise,no peak offset,9.094,5336
+O3a,BNS,1.12,1.4,noise,32 draws,9.232,5336
+O3a,BNS,1.12,1.4,noise,no peak offset,9.075,5336
 O3a,NSBH,2.2,4.0,search,GstLAL,10.041,16232
 O3a,NSBH,2.2,4.0,search,MBTA,10.469,14574
 O3a,NSBH,2.2,4.0,search,PyCBC,10.069,16119
@@ -110,8 +110,8 @@ O3a,BBH,20.0,35.0,chirp mass,29.65-35.00,8.377,2684
 O3a,BBH,20.0,35.0,redshift,0.015-0.254,8.391,3228
 O3a,BBH,20.0,35.0,redshift,0.254-0.380,8.6,2644
 O3a,BBH,20.0,35.0,redshift,0.380-0.950,8.409,1887
-O3a,BBH,20.0,35.0,noise,32 draws,8.482,7757
-O3a,BBH,20.0,35.0,noise,no peak offset,8.327,7757
+O3a,BBH,20.0,35.0,noise,32 draws,8.48,7757
+O3a,BBH,20.0,35.0,noise,no peak offset,8.333,7757
 O3b,BNS,1.12,1.4,search,GstLAL,10.487,3415
 O3b,BNS,1.12,1.4,search,MBTA,9.374,4443
 O3b,BNS,1.12,1.4,search,PyCBC,9.478,4346
@@ -141,8 +141,8 @@ O3b,BNS,1.12,1.4,chirp mass,1.34-1.40,8.885,1646
 O3b,BNS,1.12,1.4,redshift,0.001-0.028,9.206,1959
 O3b,BNS,1.12,1.4,redshift,0.028-0.044,8.936,1736
 O3b,BNS,1.12,1.4,redshift,0.044-0.102,8.67,1256
-O3b,BNS,1.12,1.4,noise,32 draws,8.859,4950
-O3b,BNS,1.12,1.4,noise,no peak offset,8.7,4950
+O3b,BNS,1.12,1.4,noise,32 draws,8.844,4950
+O3b,BNS,1.12,1.4,noise,no peak offset,8.699,4950
 O3b,NSBH,2.2,4.0,search,GstLAL,10.015,14038
 O3b,NSBH,2.2,4.0,search,MBTA,10.122,13669
 O3b,NSBH,2.2,4.0,search,PyCBC,9.753,14964
@@ -174,8 +174,8 @@ O3b,NSBH,2.2,4.0,chirp mass,3.13-4.00,9.063,5801
 O3b,NSBH,2.2,4.0,redshift,0.001-0.052,9.342,7315
 O3b,NSBH,2.2,4.0,redshift,0.052-0.080,9.147,6075
 O3b,NSBH,2.2,4.0,redshift,0.080-0.219,8.842,4239
-O3b,NSBH,2.2,4.0,noise,32 draws,9.022,17628
-O3b,NSBH,2.2,4.0,noise,no peak offset,8.876,17628
+O3b,NSBH,2.2,4.0,noise,32 draws,9.021,17628
+O3b,NSBH,2.2,4.0,noise,no peak offset,8.88,17628
 O3b,BBH,20.0,35.0,search,GstLAL,9.029,5942
 O3b,BBH,20.0,35.0,search,MBTA,10.673,3950
 O3b,BBH,20.0,35.0,search,PyCBC,9.118,5817
@@ -208,8 +208,8 @@ O3b,BBH,20.0,35.0,chirp mass,29.66-35.00,8.375,2286
 O3b,BBH,20.0,35.0,redshift,0.012-0.260,8.124,2915
 O3b,BBH,20.0,35.0,redshift,0.260-0.388,8.393,2387
 O3b,BBH,20.0,35.0,redshift,0.388-0.911,8.331,1668
-O3b,BBH,20.0,35.0,noise,32 draws,8.317,6970
-O3b,BBH,20.0,35.0,noise,no peak offset,8.185,6970
+O3b,BBH,20.0,35.0,noise,32 draws,8.325,6970
+O3b,BBH,20.0,35.0,noise,no peak offset,8.175,6970
 O4a,BNS,1.12,1.4,search,GstLAL,13.823,297
 O4a,BNS,1.12,1.4,search,MBTA,12.556,380
 O4a,BNS,1.12,1.4,search,PyCBC,11.989,417
@@ -241,8 +241,8 @@ O4a,BNS,1.12,1.4,chirp mass,1.33-1.40,11.231,152
 O4a,BNS,1.12,1.4,redshift,0.004-0.031,12.056,181
 O4a,BNS,1.12,1.4,redshift,0.031-0.046,11.848,153
 O4a,BNS,1.12,1.4,redshift,0.046-0.143,11.144,118
-O4a,BNS,1.12,1.4,noise,32 draws,11.527,451
-O4a,BNS,1.12,1.4,noise,no peak offset,11.383,451
+O4a,BNS,1.12,1.4,noise,32 draws,11.526,451
+O4a,BNS,1.12,1.4,noise,no peak offset,11.37,451
 O4a,NSBH,2.2,4.0,search,GstLAL,11.725,2149
 O4a,NSBH,2.2,4.0,search,MBTA,11.898,2066
 O4a,NSBH,2.2,4.0,search,PyCBC,11.424,2292
@@ -280,8 +280,8 @@ O4a,NSBH,2.2,4.0,chirp mass,2.63-4.00,11.001,794
 O4a,NSBH,2.2,4.0,redshift,0.006-0.063,11.394,1073
 O4a,NSBH,2.2,4.0,redshift,0.063-0.094,11.232,840
 O4a,NSBH,2.2,4.0,redshift,0.094-0.250,10.739,573
-O4a,NSBH,2.2,4.0,noise,32 draws,11.04,2486
-O4a,NSBH,2.2,4.0,noise,no peak offset,10.903,2486
+O4a,NSBH,2.2,4.0,noise,32 draws,11.03,2486
+O4a,NSBH,2.2,4.0,noise,no peak offset,10.893,2486
 O4a,BBH,20.0,35.0,search,GstLAL,10.405,68233
 O4a,BBH,20.0,35.0,search,MBTA,12.875,42346
 O4a,BBH,20.0,35.0,search,PyCBC,10.089,72365
@@ -319,7 +319,7 @@ O4a,BBH,20.0,35.0,chirp mass,30.71-35.00,9.752,24810
 O4a,BBH,20.0,35.0,redshift,0.005-0.306,10.433,32674
 O4a,BBH,20.0,35.0,redshift,0.306-0.468,9.993,25872
 O4a,BBH,20.0,35.0,redshift,0.468-1.469,9.507,17135
-O4a,BBH,20.0,35.0,noise,32 draws,9.843,75681
+O4a,BBH,20.0,35.0,noise,32 draws,9.844,75681
 O4a,BBH,20.0,35.0,noise,no peak offset,9.713,75681
 O4b,BNS,1.12,1.4,search,GstLAL,14.086,334
 O4b,BNS,1.12,1.4,search,MBTA,12.278,455
@@ -355,8 +355,8 @@ O4b,BNS,1.12,1.4,chirp mass,1.33-1.40,11.741,159
 O4b,BNS,1.12,1.4,redshift,0.005-0.031,12.41,201
 O4b,BNS,1.12,1.4,redshift,0.031-0.048,11.96,170
 O4b,BNS,1.12,1.4,redshift,0.048-0.126,11.533,120
-O4b,BNS,1.12,1.4,noise,32 draws,11.748,491
-O4b,BNS,1.12,1.4,noise,no peak offset,11.608,491
+O4b,BNS,1.12,1.4,noise,32 draws,11.762,491
+O4b,BNS,1.12,1.4,noise,no peak offset,11.617,491
 O4b,NSBH,2.2,4.0,search,GstLAL,11.696,2276
 O4b,NSBH,2.2,4.0,search,MBTA,11.692,2279
 O4b,NSBH,2.2,4.0,search,PyCBC,11.658,2297
@@ -397,8 +397,8 @@ O4b,NSBH,2.2,4.0,chirp mass,2.62-4.00,11.184,791
 O4b,NSBH,2.2,4.0,redshift,0.003-0.065,11.699,1111
 O4b,NSBH,2.2,4.0,redshift,0.065-0.098,11.319,869
 O4b,NSBH,2.2,4.0,redshift,0.098-0.375,10.736,596
-O4b,NSBH,2.2,4.0,noise,32 draws,11.134,2576
-O4b,NSBH,2.2,4.0,noise,no peak offset,11.002,2576
+O4b,NSBH,2.2,4.0,noise,32 draws,11.132,2576
+O4b,NSBH,2.2,4.0,noise,no peak offset,10.987,2576
 O4b,BBH,20.0,35.0,search,GstLAL,10.437,70833
 O4b,BBH,20.0,35.0,search,MBTA,12.422,48065
 O4b,BBH,20.0,35.0,search,PyCBC,10.401,71314
@@ -442,5 +442,5 @@ O4b,BBH,20.0,35.0,chirp mass,30.63-35.00,9.901,25392
 O4b,BBH,20.0,35.0,redshift,0.005-0.311,10.637,33548
 O4b,BBH,20.0,35.0,redshift,0.311-0.481,10.188,26215
 O4b,BBH,20.0,35.0,redshift,0.481-1.485,9.566,17281
-O4b,BBH,20.0,35.0,noise,32 draws,9.979,77044
-O4b,BBH,20.0,35.0,noise,no peak offset,9.838,77044
+O4b,BBH,20.0,35.0,noise,32 draws,9.977,77044
+O4b,BBH,20.0,35.0,noise,no peak offset,9.834,77044

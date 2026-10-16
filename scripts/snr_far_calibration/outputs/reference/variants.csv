@@ -1,7 +1,7 @@
 # SNRs: optimal SNRs of the simulations (o2-uberbank from 25 Hz) for H1 ../../data/asd/o4b_h1_ref.txt, L1 ../../data/asd/o4b_l1_ref.txt, V1 ../../data/asd/o4b_v1_ref.txt, converted with outputs/snr_scale.csv
 # command: measure.py --runs O4a O4b --snr-scale outputs/snr_scale.csv --all-histograms
 # injections: mixture-semi_o1_o2-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf, doi:10.5281/zenodo.19500052
-# commit: 1095cf4
+# commit: c997922
 run,source_class,chirp_mass_min,chirp_mass_max,group,variant,rho_eq,n_found
 O4a,BNS,1.12,1.4,search,GstLAL,13.336,297
 O4a,BNS,1.12,1.4,search,MBTA,12.062,380
@@ -34,8 +34,8 @@ O4a,BNS,1.12,1.4,chirp mass,1.33-1.40,10.755,152
 O4a,BNS,1.12,1.4,redshift,0.004-0.031,11.525,181
 O4a,BNS,1.12,1.4,redshift,0.031-0.046,11.394,153
 O4a,BNS,1.12,1.4,redshift,0.046-0.143,10.641,118
-O4a,BNS,1.12,1.4,noise,32 draws,11.027,451
-O4a,BNS,1.12,1.4,noise,no peak offset,10.893,451
+O4a,BNS,1.12,1.4,noise,32 draws,11.03,451
+O4a,BNS,1.12,1.4,noise,no peak offset,10.872,451
 O4a,NSBH,2.2,4.0,search,GstLAL,10.832,2149
 O4a,NSBH,2.2,4.0,search,MBTA,11.003,2066
 O4a,NSBH,2.2,4.0,search,PyCBC,10.563,2292
@@ -73,8 +73,8 @@ O4a,NSBH,2.2,4.0,chirp mass,2.63-4.00,10.174,794
 O4a,NSBH,2.2,4.0,redshift,0.006-0.063,10.542,1073
 O4a,NSBH,2.2,4.0,redshift,0.063-0.094,10.371,840
 O4a,NSBH,2.2,4.0,redshift,0.094-0.250,9.919,573
-O4a,NSBH,2.2,4.0,noise,32 draws,10.191,2486
-O4a,NSBH,2.2,4.0,noise,no peak offset,10.058,2486
+O4a,NSBH,2.2,4.0,noise,32 draws,10.18,2486
+O4a,NSBH,2.2,4.0,noise,no peak offset,10.051,2486
 O4a,BBH,20.0,35.0,search,GstLAL,9.377,68233
 O4a,BBH,20.0,35.0,search,MBTA,11.614,42346
 O4a,BBH,20.0,35.0,search,PyCBC,9.087,72365
@@ -148,8 +148,8 @@ O4b,BNS,1.12,1.4,chirp mass,1.33-1.40,10.675,159
 O4b,BNS,1.12,1.4,redshift,0.005-0.031,11.269,201
 O4b,BNS,1.12,1.4,redshift,0.031-0.048,10.884,170
 O4b,BNS,1.12,1.4,redshift,0.048-0.126,10.505,120
-O4b,BNS,1.12,1.4,noise,32 draws,10.682,491
-O4b,BNS,1.12,1.4,noise,no peak offset,10.537,491
+O4b,BNS,1.12,1.4,noise,32 draws,10.691,491
+O4b,BNS,1.12,1.4,noise,no peak offset,10.544,491
 O4b,NSBH,2.2,4.0,search,GstLAL,10.291,2276
 O4b,NSBH,2.2,4.0,search,MBTA,10.286,2279
 O4b,NSBH,2.2,4.0,search,PyCBC,10.256,2297
@@ -190,8 +190,8 @@ O4b,NSBH,2.2,4.0,chirp mass,2.62-4.00,9.831,791
 O4b,NSBH,2.2,4.0,redshift,0.003-0.065,10.26,1111
 O4b,NSBH,2.2,4.0,redshift,0.065-0.098,9.948,869
 O4b,NSBH,2.2,4.0,redshift,0.098-0.375,9.457,596
-O4b,NSBH,2.2,4.0,noise,32 draws,9.785,2576
-O4b,NSBH,2.2,4.0,noise,no peak offset,9.649,2576
+O4b,NSBH,2.2,4.0,noise,32 draws,9.783,2576
+O4b,NSBH,2.2,4.0,noise,no peak offset,9.635,2576
 O4b,BBH,20.0,35.0,search,GstLAL,8.975,70833
 O4b,BBH,20.0,35.0,search,MBTA,10.679,48065
 O4b,BBH,20.0,35.0,search,PyCBC,8.943,71314
@@ -235,5 +235,5 @@ O4b,BBH,20.0,35.0,chirp mass,30.63-35.00,8.478,25392
 O4b,BBH,20.0,35.0,redshift,0.005-0.311,9.124,33548
 O4b,BBH,20.0,35.0,redshift,0.311-0.481,8.743,26215
 O4b,BBH,20.0,35.0,redshift,0.481-1.485,8.24,17281
-O4b,BBH,20.0,35.0,noise,32 draws,8.576,77044
-O4b,BBH,20.0,35.0,noise,no peak offset,8.436,77044
+O4b,BBH,20.0,35.0,noise,32 draws,8.574,77044
+O4b,BBH,20.0,35.0,noise,no peak offset,8.433,77044

@@ -11,7 +11,7 @@ import numpy as np
 NOISE_DRAWS = 16  # 8, 16 and 64 give the same rho_eq to 0.01
 PEAK_OFFSET = 0.1  # measured with checks/noise_model.py
 SINGLE_DETECTOR_MIN = 1.0  # bayestar-realize-coincs --snr-threshold
-BOOTSTRAP = 1000  # 20000  # resamples of the injections; error known to ~0.5%
+BOOTSTRAP = 20000  # resamples of the injections; error known to ~0.5%
 
 
 def network_snr(optimal_snr, state, rng, draws=None, offset=None):
