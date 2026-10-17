@@ -11,16 +11,38 @@ apart, so this script does it and refuses the release table outright.
 
 import argparse
 import csv
+import io
+import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
-from config import OUT_DIR
+from config import OUT_DIR, REPO
 
 SOURCE = "rho_eq_simulations.csv"
 TARGET = Path("thresholds") / "rho_eq.csv"
 DROP = ("found_below", "missed_above")
 RUNS = ("O4a", "O4b")
+
+
+def qualify_commit(comments):
+    """Name the repository on the commit line.
+
+    A bare hash is unambiguous where it was written, but this file is read in
+    another repository, where that revision does not exist.
+    """
+    url = subprocess.run(
+        ["git", "-C", str(REPO), "remote", "get-url", "origin"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    slug = re.sub(r"^.*[:/]([^/]+/[^/]+?)(\.git)?$", r"\1", url) if url else ""
+    if not slug:
+        return comments
+    return [
+        re.sub(r"^# commit: (\S+)", rf"# commit: {slug}@\1", line) for line in comments
+    ]
 
 
 def read(path):
@@ -47,6 +69,7 @@ def main():
     if not source.exists():
         parser.error(f"{source} is missing; run measure.py --snr-scale first")
     comments, rows = read(source)
+    comments = qualify_commit(comments)
     if not any("simulations" in line for line in comments):
         parser.error(f"{source} does not carry the simulation units; wrong table")
 
@@ -54,7 +77,21 @@ def main():
     fields = [k for k in rows[0] if k not in DROP]
     target = args.fork / TARGET
 
+    buffer = io.StringIO()
+    buffer.writelines(comments)
+    writer = csv.DictWriter(
+        buffer, fieldnames=fields, extrasaction="ignore", lineterminator="\r\n"
+    )
+    writer.writeheader()
+    writer.writerows(rows)
+    content = buffer.getvalue()
+
     if target.exists():
+        with open(target, newline="") as f:
+            same = f.read() == content
+        if same:
+            print(f"{target} is already up to date")
+            return
         _, old = read(target)
         stale = [
             (
@@ -74,22 +111,20 @@ def main():
                 f"at {worst[0]} {worst[1]} {worst[2]}"
             )
         else:
-            print(f"{target} is already up to date")
-            return
+            print("values unchanged, provenance header differs")
     if args.check:
         sys.exit(1)
 
     target.parent.mkdir(parents=True, exist_ok=True)
     backup = target.with_suffix(".csv.bak")
-    if target.exists():
+    existed = target.exists()
+    if existed:
         shutil.copy2(target, backup)
     with open(target, "w", newline="") as f:
-        f.writelines(comments)
-        writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
+        f.write(content)
     print(
-        f"wrote {target} ({len(rows)} rows){f', previous kept as {backup.name}' if backup.exists() else ''}"
+        f"wrote {target} ({len(rows)} rows)"
+        + (f", previous kept as {backup.name}" if existed else "")
     )
 
 
