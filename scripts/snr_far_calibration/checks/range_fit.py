@@ -49,12 +49,12 @@ def main():
             and np.isclose(float(row["chirp_mass_min"]), args.chirp_mass_min)
         )
 
-    full = next(r for r in read("rho_eq.csv") if same_bin(r))
+    full = next(r for r in read("rho_eq_release.csv") if same_bin(r))
     error, n_found = float(full["error"]), int(full["n_found"])
     ranges = sensitivity.month_ranges()
 
     rows = []
-    for r in read("variants.csv"):
+    for r in read("variants_release.csv"):
         month = r["variant"].replace("-", "_")
         if not (same_bin(r) and r["group"] == group):
             continue

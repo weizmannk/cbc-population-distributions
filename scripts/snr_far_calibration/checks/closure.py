@@ -35,7 +35,7 @@ def found_probability(run, source_class, chirp_mass_min):
     """p(rho) of one bin from histograms.csv: SNR bin centres and found fraction."""
     rows = [
         r
-        for r in read_csv(OUT_DIR / "histograms.csv")
+        for r in read_csv(OUT_DIR / "histograms_release.csv")
         if r["run"] == run
         and r["source_class"] == source_class
         and np.isclose(float(r["chirp_mass_min"]), chirp_mass_min)
@@ -43,7 +43,7 @@ def found_probability(run, source_class, chirp_mass_min):
     if not rows:
         raise ValueError(
             f"no histogram for {run} {source_class} {chirp_mass_min:g} "
-            f"in {OUT_DIR / 'histograms.csv'}"
+            f"in {OUT_DIR / 'histograms_release.csv'}"
         )
     centre, probability = [], []
     for r in rows:
@@ -61,7 +61,7 @@ def soft_selection(args, rng):
     )
     row = next(
         r
-        for r in read_csv(OUT_DIR / "rho_eq.csv")
+        for r in read_csv(OUT_DIR / "rho_eq_release.csv")
         if r["run"] == args.run
         and r["source_class"] == args.source_class
         and np.isclose(float(r["chirp_mass_min"]), args.chirp_mass_min)

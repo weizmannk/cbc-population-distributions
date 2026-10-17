@@ -106,21 +106,21 @@ bootstrap error; 24 of the 28 bins agree to better than 0.03. The quantile and
 the count-equality definitions coincide, and the measurement reproduces under a
 different implementation. Status: OK.
 
-`variants.csv`: 4 searches (3 where cWB finds fewer than 30, as expected for
+`variants_release.csv`: 4 searches (3 where cWB finds fewer than 30, as expected for
 BNS), FAR grid 0.01 / 0.1 / 0.25 / 10, every network of each run, 5-10 calendar
 months per run, both dominant detectors, three chirp-mass terciles, and the
 three noise variants. rho_eq falls monotonically as the cut is loosened
 (O4b BBH 20-35: 11.05, 10.56, 10.34, [9.98 at FAR < 1], 9.26). Status: OK.
 
-`histograms.csv`: the sums reproduce 94-98% of `n_found` and of `n_injections`
-of `rho_eq.csv`, the rest being the tails outside the 4-32 range of
+`histograms_release.csv`: the sums reproduce 94-98% of `n_found` and of `n_injections`
+of `rho_eq_release.csv`, the rest being the tails outside the 4-32 range of
 `HISTOGRAM_EDGES`. Status: OK.
 
 ## Step 6 — SNRs of the simulations
 
 `python snr_scale.py --runs O4a O4b -o outputs/snr_scale.csv --H1 ... --L1 ...
 --V1 ...` with the `o4b_*_ref.txt` curves, then
-`SNRFAR_OUT=outputs/reference python measure.py --runs O4a O4b --snr-scale
+`python measure.py --runs O4a O4b --snr-scale
 outputs/snr_scale.csv`. This replaces the earlier `--reference`, which scaled
 every SNR by the ratio of BNS ranges whatever the masses, and ignored the
 templates and the 16 against 25 Hz cutoffs of the release and the simulations.
@@ -222,12 +222,12 @@ Every number re-derived from the CSVs:
 
 | Check | Result |
 |---|---|
-| (a) rho_eq on the top axis | 11.6; `rho_eq.csv` gives 11.512 (O4a) and 11.727 (O4b), mean 11.6195 |
+| (a) rho_eq on the top axis | 11.6; `rho_eq_release.csv` gives 11.512 (O4a) and 11.727 (O4b), mean 11.6195 |
 | (a) "found below" = "missed above" | 0.1322 and 0.1314 for both quantities, mean 13% in both legend entries |
 | (b) markers on the curves | the six markers fall inside the span of their curve, interpolated fraction 0.486-0.552 |
 | (c) every `TABLE_BINS` x run | 14 bins x 4 runs, none missing |
 | (c) "adopted" bars | recomputed as the O4a/O4b mean for the 14 bins, all matching |
-| (d) ratios | recomputed from `rho_eq.csv` and `variants.csv`, 1.119-1.321, matching the points |
+| (d) ratios | recomputed from `rho_eq_release.csv` and `variants_release.csv`, 1.119-1.321, matching the points |
 | (d) grey band | network ranges O3a 168.5, O4a 249.3, O4b 263.6 Mpc, band [1.480, 1.565] |
 
 Layout: 7.1 x 5.6 in, fonts 7.5-9 pt, no text, panel label or legend over the
@@ -241,7 +241,7 @@ O3 NSBH marker (9.11, 0.53).
 
 10 m 47 s with the three `checks/noise_model.py` steps running, 11 sections in
 `outputs/run_all.log`, `results.zip` 323 540 bytes. The four CSVs of `outputs/`
-and the three of `outputs/reference/` are **byte-identical** between two
+and the three of `outputs/*_simulations.csv` are **byte-identical** between two
 independent runs, one launched from a terminal and one from a script, which is
 what the per-bin noise stream of `measure.py` guarantees: each bin draws from a
 stream seeded by the run, the class and the bin index, so a bin gives the same
@@ -327,7 +327,7 @@ the real search response. Status: open.
    variation of rho_eq inside a bin in O4, but the significant gradients are in
    the BBH bins (16 sigma in O4a BBH 20-35, 7-8 sigma in O3 BBH 60-120), which
    are not halved.
-4. **The O4a thresholds of `outputs/reference/` use the O4b curves**, because
+4. **The O4a thresholds of `outputs/*_simulations.csv` use the O4b curves**, because
    the O4a simulations do. `o4a_h1_ref.txt` and `o4a_l1_ref.txt` (152.9 and
    173.0 Mpc) are the curves to give `snr_scale.py` for thresholds that
    represent the O4a searches on the sensitivity of the O4a data.

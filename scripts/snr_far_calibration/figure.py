@@ -343,9 +343,9 @@ def legend(fig):
 
 
 def main():
-    results = read("rho_eq.csv")
-    variants = read("variants.csv")
-    histograms = read("histograms.csv")
+    results = read("rho_eq_release.csv")
+    variants = read("variants_release.csv")
+    histograms = read("histograms_release.csv")
     ranges = read("release_ranges.csv")
 
     fig, axes = plt.subplots(2, 2, figsize=(7.1, 5.6), layout="constrained")
