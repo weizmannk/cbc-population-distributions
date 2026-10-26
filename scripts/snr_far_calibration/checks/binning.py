@@ -16,16 +16,16 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import injections  # noqa: E402
-import segments  # noqa: E402
-from config import (  # noqa: E402
+import injections
+import segments
+from config import (
     CHIRP_MASS_EDGES,
     CLASSES,
     FAR_THRESHOLD,
     INJECTIONS,
     RUNS,
 )
-from threshold import bootstrap_error, equivalent_threshold, network_snr  # noqa: E402
+from threshold import bootstrap_error, equivalent_threshold, network_snr
 
 MIN_FOUND = 30
 CHECK_RESAMPLES = 100  # diagnostic: no need for the precision of the table
