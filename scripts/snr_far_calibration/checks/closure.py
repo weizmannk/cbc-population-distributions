@@ -22,8 +22,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config import CURRENT_THRESHOLD, OUT_DIR, read_csv  # noqa: E402
-from threshold import equivalent_threshold, network_snr  # noqa: E402
+from config import CURRENT_THRESHOLD, OUT_DIR, read_csv
+from threshold import equivalent_threshold, network_snr
 
 N = 100_000
 PLANTED = (8.0, 10.0, 12.0)

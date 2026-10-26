@@ -215,8 +215,7 @@ def histogram_row(run, cls, lo, k, found, missed):
 def write(rows, name, units):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUT_DIR / name, "w", newline="") as f:
-        for line in provenance(units):
-            f.write(f"# {line}\n")
+        f.writelines(f"# {line}\n" for line in provenance(units))
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)

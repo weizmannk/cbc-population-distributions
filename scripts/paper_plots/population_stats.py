@@ -764,13 +764,13 @@ for model_name, rates_table in [
                 "Merger rate density (Gpc$^{-3}$ yr$^{-1}$)",
             ],
         ):
-            print("| {:69s} |".format(fieldlabel), file=f_rst)
+            print(f"| {fieldlabel:69s} |", file=f_rst)
             if fieldname == "rate":
                 print(
                     "+-----------+-----------+---------------+---------------+---------------+",
                     file=f_rst,
                 )
-                print("| {:69s} |".format(_durations_note), file=f_rst)
+                print(f"| {_durations_note:69s} |", file=f_rst)
             print("<table>", file=f)
             print("<caption>", fieldlabel, "</caption>", file=f)
             print("<thead>", file=f)
@@ -819,8 +819,8 @@ for model_name, rates_table in [
                         lo, mid, hi = bootstrap.ci(data, statfunc, quantiles, seed=seed)
 
                     mid, lo, hi = format_with_errorbars(mid, lo, hi)
-                    mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
-                    print("<td>${}$</td>".format(mathtext), file=f)
+                    mathtext = f"{mid}^{{+{hi}}}_{{-{lo}}}"
+                    print(f"<td>${mathtext}$</td>", file=f)
 
                     results.setdefault("lo", {})[pop] = lo
                     results.setdefault("mid", {})[pop] = mid
@@ -840,7 +840,7 @@ for model_name, rates_table in [
                 print(
                     "|           |           "
                     + ("| ^{:13s}" * 3).format(
-                        *("{{+{}}}".format(_) for _ in results["hi"].values())
+                        *(f"{{+{_}}}" for _ in results["hi"].values())
                     )
                     + "|",
                     file=f_rst,
@@ -848,7 +848,7 @@ for model_name, rates_table in [
                 print(
                     "|           |           "
                     + ("| _{:13s}" * 3).format(
-                        *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                        *(f"{{-{_}}}`" for _ in results["lo"].values())
                     )
                     + "|",
                     file=f_rst,
@@ -913,7 +913,7 @@ for model_name, rates_table in [
                 lambda _: stats.percentileofscore(_["vol(90)"], 10),
             ],
         ]:
-            print("| {:69s} |".format(fieldlabel), file=f_rst)
+            print(f"| {fieldlabel:69s} |", file=f_rst)
             print("<table>", file=f)
             print("<caption>", fieldlabel, "</caption>", file=f)
             print("<thead>", file=f)
@@ -931,8 +931,8 @@ for model_name, rates_table in [
                     quantiles = [0.05, 0.5, 0.95]
                     lo, mid, hi = bootstrap.ci(table, statfunc, quantiles, seed=seed)
                     mid, lo, hi = format_with_errorbars(mid, lo, hi)
-                    mathtext = "{}^{{+{}}}_{{-{}}}".format(mid, hi, lo)
-                    print("<td>${}$</td>".format(mathtext), file=f)
+                    mathtext = f"{mid}^{{+{hi}}}_{{-{lo}}}"
+                    print(f"<td>${mathtext}$</td>", file=f)
 
                     results.setdefault("lo", {})[pop] = lo
                     results.setdefault("mid", {})[pop] = mid
@@ -952,7 +952,7 @@ for model_name, rates_table in [
                 print(
                     "|           |           "
                     + ("| ^{:13s}" * 3).format(
-                        *("{{+{}}}".format(_) for _ in results["hi"].values())
+                        *(f"{{+{_}}}" for _ in results["hi"].values())
                     )
                     + "|",
                     file=f_rst,
@@ -960,7 +960,7 @@ for model_name, rates_table in [
                 print(
                     "|           |           "
                     + ("| _{:13s}" * 3).format(
-                        *("{{-{}}}`".format(_) for _ in results["lo"].values())
+                        *(f"{{-{_}}}`" for _ in results["lo"].values())
                     )
                     + "|",
                     file=f_rst,

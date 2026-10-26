@@ -33,8 +33,8 @@ import lal
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import snr_scale  # noqa: E402
-from config import (  # noqa: E402
+import snr_scale
+from config import (
     INJECTIONS,
     RELEASE_F_LOW,
     RELEASE_PSDS,
@@ -42,8 +42,8 @@ from config import (  # noqa: E402
     RUN_DETECTORS,
     RUN_GPS,
 )
-from measure import months  # noqa: E402
-from snr_scale import MASS_RATIO, TOTAL_MASS  # noqa: E402
+from measure import months
+from snr_scale import MASS_RATIO, TOTAL_MASS
 
 REAL_INJECTIONS = INJECTIONS.with_name(
     "mixture-real_o3_o4a_o4b-cartesian_spins_20260410130052UTC-clipped.hdf"
