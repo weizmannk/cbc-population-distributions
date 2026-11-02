@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 ---------------------------------------------------------------------------------------------------
                                     ABOUT
@@ -29,7 +28,6 @@ import sys
 from pathlib import Path
 
 import matplotlib
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
@@ -38,6 +36,7 @@ from astropy.cosmology import Planck15 as cosmo
 from astropy.cosmology import z_at_value
 from astropy.table import Table, join
 from ligo.skymap.util import sqlite
+from matplotlib import gridspec
 from scipy import stats
 
 #: Anchor on this file's own location, not the caller's cwd. This is what
@@ -54,7 +53,7 @@ OUTPUT_DIR = _SCRIPT_DIR.parent / "outputs" / "kn_detection"
 #: population_stats.py, so the KN counts use exactly the same quantile
 #: convention as every other detection-count estimate in this project.
 sys.path.insert(0, str(_SCRIPT_DIR.parent))
-from poisson_rate_utils import poisson_lognormal_rate_quantiles  # noqa: E402
+from poisson_rate_utils import poisson_lognormal_rate_quantiles
 
 # ---------------------------------------------------------------------------
 # Plotting defaults
@@ -523,7 +522,7 @@ def _network_label(run_name):
     """Display label for a run folder name: 'IR1HL' -> 'HL'. Falls back to
     the run name unchanged if it doesn't start with 'IR1', so this stays
     generic for any future campaign passed via run_names."""
-    return run_name[3:] if run_name.startswith("IR1") else run_name
+    return run_name.removeprefix("IR1")
 
 
 # ---------------------------------------------------------------------------
