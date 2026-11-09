@@ -15,8 +15,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import injections  # noqa: E402
-from config import (  # noqa: E402
+import injections
+from config import (
     BH_MAX_MASS,
     CHIRP_MASS_EDGES,
     CLASSES,

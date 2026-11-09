@@ -19,8 +19,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import sensitivity  # noqa: E402
-from config import OUT_DIR, read_csv  # noqa: E402
+import sensitivity
+from config import OUT_DIR, read_csv
 
 
 def read(name):
