@@ -21,10 +21,10 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import injections  # noqa: E402
-import segments  # noqa: E402
-from config import CLASSES, FAR_THRESHOLD, INJECTIONS, RUNS  # noqa: E402
-from threshold import network_snr  # noqa: E402
+import injections
+import segments
+from config import CLASSES, FAR_THRESHOLD, INJECTIONS, RUNS
+from threshold import network_snr
 
 CBC_SEARCHES = ("GstLAL", "MBTA", "PyCBC")
 
