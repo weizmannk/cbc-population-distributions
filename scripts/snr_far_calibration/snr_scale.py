@@ -281,8 +281,7 @@ def main():
     ] + provenance()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, "w", newline="") as f:
-        for line in comments:
-            f.write(f"# {line}\n")
+        f.writelines(f"# {line}\n" for line in comments)
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
